@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const km = formulario.elements.km.value;
 
     try {
-      const response = await axios.post("/proc", {
+      const response = await axios.post("http://localhost:3000/proc", {
         codia: codia,
         year: year,
         brand: brand,
