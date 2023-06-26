@@ -4,12 +4,15 @@ import { accessToken } from "./helpers/accessToken.js";
 import { pa7_cgConnection } from "./helpers/connection.js";
 import { QueryTypes } from "sequelize";
 import { obtainCategory } from "./helpers/obtainCategory.js";
-
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
 import cors from "cors";
 const app = express();
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 app.use(express.json());
 app.use(cors());
+app.use(express.static(__dirname));
 const PORT = 3000;
 const baseUrl = "https://demo.api.infoauto.com.ar/cars/pub/";
 
@@ -19,7 +22,8 @@ app.listen(PORT, (error) => {
 });
 
 app.get("/", (req, res) => {
-  return res.send("Bienvenido a la API infoAuto");
+  const indexPath = path.resolve(__dirname, "index.html");
+  res.sendFile(indexPath);
 });
 
 app.post("/proc", async (req, res) => {
