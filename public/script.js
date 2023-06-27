@@ -30,6 +30,16 @@ document.addEventListener("DOMContentLoaded", () => {
         resultado.percentage * 10
       }%`;
       categoriaElemento.textContent = `Categoría: ${resultado.category}`;
+
+      const limpiarFormulario = () => {
+        formulario.reset();
+        resultadoElemento.textContent = "";
+        porcentajeElemento.textContent = "";
+        categoriaElemento.textContent = "";
+      };
+
+      const limpiarButton = document.getElementById("limpiarButton");
+      limpiarButton.addEventListener("click", limpiarFormulario);
     } catch (error) {
       console.error("Error al realizar la consulta:", error);
     }
