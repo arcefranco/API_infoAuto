@@ -41,8 +41,9 @@ app.post("/proc", async (req, res) => {
     pricesResponse = await axios.get(baseUrl + `models/${codia}/prices`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    console.log(pricesResponse);
   } catch (error) {
-    return res.status(404).send({ result: "Verifique el código enviado" });
+    return res.send({ result: "Verifique el código enviado" });
   }
 
   const prices = pricesResponse.data.filter((e) => {
@@ -81,7 +82,7 @@ app.post("/proc", async (req, res) => {
       }
     );
   } catch (error) {
-    return res.send(error);
+    return res.send({ result: JSON.stringify(error) });
   }
   return res.send({
     result: finalPrice * percentage[0].porcentaje,
