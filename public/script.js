@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const categoriaElemento = document.getElementById("categoria");
   const precioElemento = document.getElementById("precio");
   const rotacionElemento = document.getElementById("rotacion");
+  const JSONElemento = document.getElementById("JSON");
   formulario.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -32,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
       categoriaElemento.textContent = `Categoría: ${resultado.category}`;
       precioElemento.textContent = `Precio: ${resultado.price}`;
       rotacionElemento.textContent = `Rotación: ${resultado.rotation}`;
+      JSONElemento.textContent = JSON.stringify(resultado);
 
       const limpiarFormulario = () => {
         formulario.reset();
@@ -40,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
         categoriaElemento.textContent = "";
         precioElemento.textContent = "";
         rotacionElemento.textContent = "";
+        JSONElemento.textContent = "";
       };
 
       const limpiarButton = document.getElementById("limpiarButton");

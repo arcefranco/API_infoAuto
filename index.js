@@ -48,6 +48,9 @@ app.post("/proc", async (req, res) => {
   const prices = pricesResponse.data.filter((e) => {
     return e.year == year;
   });
+  if (!prices.length) {
+    return res.send({ result: "No hay precio para el año indicado" });
+  }
   const finalPrice = prices[0].price * 1000;
   try {
     rotation = await pa7_cgConnection.query(
@@ -60,7 +63,7 @@ app.post("/proc", async (req, res) => {
   } catch (error) {
     return res.send(error);
   }
-  if (rotation.length === 0) {
+  if (!rotation.length) {
     return res.send({ result: "La marca o el grupo son incorrectos" });
   }
   const antiquity = currentYear - year;
@@ -77,7 +80,6 @@ app.post("/proc", async (req, res) => {
         type: QueryTypes.SELECT,
       }
     );
-    console.log(percentage);
   } catch (error) {
     return res.send(error);
   }
