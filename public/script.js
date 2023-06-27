@@ -38,6 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
         resultadoElemento.textContent = "";
         porcentajeElemento.textContent = "";
         categoriaElemento.textContent = "";
+        precioElemento.textContent = "";
+        rotacionElemento.textContent = "";
       };
 
       const limpiarButton = document.getElementById("limpiarButton");
