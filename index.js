@@ -29,7 +29,9 @@ app.get("/", (req, res) => {
 app.post("/proc", async (req, res) => {
   const { codia, year, brand, group, km } = req.body;
   if (!codia || !year || !brand || !group || !km)
-    return res.status(404).send("Faltan parámetros para realizar la consulta");
+    return res
+      .status(404)
+      .send({ result: "Faltan parámetros para realizar la consulta" });
   const token = await accessToken();
   const currentYear = new Date().getFullYear();
   let pricesResponse;
@@ -40,7 +42,7 @@ app.post("/proc", async (req, res) => {
       headers: { Authorization: `Bearer ${token}` },
     });
   } catch (error) {
-    return res.status(404).send("Verifique el código enviado");
+    return res.status(404).send({ result: "Verifique el código enviado" });
   }
 
   const prices = pricesResponse.data.filter((e) => {
@@ -57,6 +59,9 @@ app.post("/proc", async (req, res) => {
     );
   } catch (error) {
     return res.send(error);
+  }
+  if (rotation.length === 0) {
+    return res.send({ result: "La marca o el grupo son incorrectos" });
   }
   const antiquity = currentYear - year;
   const category = obtainCategory(rotation[0].rotacion, antiquity, km);
