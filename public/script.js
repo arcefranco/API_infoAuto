@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultadoElemento = document.getElementById("resultado");
   const porcentajeElemento = document.getElementById("porcentaje");
   const categoriaElemento = document.getElementById("categoria");
+  const precioElemento = document.getElementById("precio");
+  const rotacionElemento = document.getElementById("rotacion");
   formulario.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -26,10 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultado = response.data;
 
       resultadoElemento.textContent = `Resultado: ${resultado.result}`;
-      porcentajeElemento.textContent = `Porcentaje: ${
-        resultado.percentage * 10
-      }%`;
+      porcentajeElemento.textContent = `Porcentaje: ${resultado.percentage}%`;
       categoriaElemento.textContent = `Categoría: ${resultado.category}`;
+      precioElemento.textContent = `Precio: ${resultado.price}`;
+      rotacionElemento.textContent = `Rotación: ${resultado.rotation}`;
 
       const limpiarFormulario = () => {
         formulario.reset();

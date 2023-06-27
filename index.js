@@ -65,6 +65,7 @@ app.post("/proc", async (req, res) => {
   }
   const antiquity = currentYear - year;
   const category = obtainCategory(rotation[0].rotacion, antiquity, km);
+  console.log(category);
   try {
     percentage = await pa7_cgConnection.query(
       `SELECT porcentaje
@@ -76,6 +77,7 @@ app.post("/proc", async (req, res) => {
         type: QueryTypes.SELECT,
       }
     );
+    console.log(percentage);
   } catch (error) {
     return res.send(error);
   }
@@ -83,5 +85,7 @@ app.post("/proc", async (req, res) => {
     result: finalPrice * percentage[0].porcentaje,
     percentage: percentage[0].porcentaje,
     category: category,
+    price: finalPrice,
+    rotation: rotation[0].rotacion,
   });
 });
