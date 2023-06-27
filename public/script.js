@@ -26,7 +26,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultado = response.data;
 
       resultadoElemento.textContent = `Resultado: ${resultado.result}`;
-      porcentajeElemento.textContent = `Porcentaje: ${resultado.percentage}`;
+      porcentajeElemento.textContent = `Porcentaje: ${
+        resultado.percentage * 10
+      }%`;
       categoriaElemento.textContent = `Categoría: ${resultado.category}`;
     } catch (error) {
       console.error("Error al realizar la consulta:", error);
