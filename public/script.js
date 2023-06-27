@@ -3,7 +3,8 @@ import axios from "axios";
 document.addEventListener("DOMContentLoaded", () => {
   const formulario = document.getElementById("consultaForm");
   const resultadoElemento = document.getElementById("resultado");
-
+  const porcentajeElemento = document.getElementById("porcentaje");
+  const categoriaElemento = document.getElementById("categoria");
   formulario.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -25,6 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultado = response.data;
 
       resultadoElemento.textContent = `Resultado: ${resultado.result}`;
+      porcentajeElemento.textContent = `Porcentaje: ${resultado.percentage}`;
+      categoriaElemento.textContent = `Categoría: ${resultado.category}`;
     } catch (error) {
       console.error("Error al realizar la consulta:", error);
     }

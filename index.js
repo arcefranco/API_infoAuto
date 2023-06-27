@@ -74,5 +74,9 @@ app.post("/proc", async (req, res) => {
   } catch (error) {
     return res.send(error);
   }
-  return res.send({ result: finalPrice * percentage[0].porcentaje });
+  return res.send({
+    result: finalPrice * percentage[0].porcentaje,
+    percentage: percentage[0].porcentaje,
+    category: category,
+  });
 });
