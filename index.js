@@ -27,13 +27,23 @@ app.get("/", (req, res) => {
 });
 
 app.post("/proc", async (req, res) => {
-  const { codia, year, brand, group, km } = req.body;
-  if (!codia || !year || !brand || !group || !km)
+  const { codia, year, km } = req.body;
+  if (!codia || !year || !km)
     return res
       .status(404)
       .send({ result: "Faltan parámetros para realizar la consulta" });
   const token = await accessToken();
   const currentYear = new Date().getFullYear();
+  const brand = Math.floor(codia / 10000);
+  let group;
+  try {
+    let groupResponse = await axios.get(baseUrl + `models/${codia}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    group = groupResponse.data.group.id;
+  } catch (error) {
+    return res.send({ result: "Error al buscar el grupo", success: false });
+  }
   let pricesResponse;
   let rotation;
   let percentage;
@@ -41,16 +51,18 @@ app.post("/proc", async (req, res) => {
     pricesResponse = await axios.get(baseUrl + `models/${codia}/prices`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    console.log(pricesResponse);
   } catch (error) {
-    return res.send({ result: "Verifique el código enviado" });
+    return res.send({ result: "Verifique el código enviado", success: false });
   }
 
   const prices = pricesResponse.data.filter((e) => {
     return e.year == year;
   });
   if (!prices.length) {
-    return res.send({ result: "No hay precio para el año indicado" });
+    return res.send({
+      result: "No hay precio para el año indicado",
+      success: false,
+    });
   }
   const finalPrice = prices[0].price * 1000;
   try {
@@ -62,10 +74,13 @@ app.post("/proc", async (req, res) => {
       }
     );
   } catch (error) {
-    return res.send(error);
+    return res.send({ result: JSON.stringify(error), success: false });
   }
   if (!rotation.length) {
-    return res.send({ result: "La marca o el grupo son incorrectos" });
+    return res.send({
+      result: "La marca o el grupo son incorrectos",
+      success: false,
+    });
   }
   const antiquity = currentYear - year;
   const category = obtainCategory(rotation[0].rotacion, antiquity, km);
@@ -82,10 +97,11 @@ app.post("/proc", async (req, res) => {
       }
     );
   } catch (error) {
-    return res.send({ result: JSON.stringify(error) });
+    return res.send({ result: JSON.stringify(error), success: false });
   }
   return res.send({
     result: finalPrice * percentage[0].porcentaje,
+    success: true,
     percentage: percentage[0].porcentaje,
     category: category,
     price: finalPrice,

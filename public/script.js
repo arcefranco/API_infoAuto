@@ -13,16 +13,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const codia = formulario.elements.codia.value;
     const year = formulario.elements.year.value;
-    const brand = formulario.elements.brand.value;
-    const group = formulario.elements.group.value;
     const km = formulario.elements.km.value;
 
     try {
       const response = await axios.post("/proc", {
         codia: codia,
         year: year,
-        brand: brand,
-        group: group,
         km: km,
       });
 
