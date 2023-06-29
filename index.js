@@ -7,6 +7,8 @@ import { obtainCategory } from "./helpers/obtainCategory.js";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
+import { logRequestResponse } from "./logger.js";
+import { generateUniqueId } from "./logger.js";
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,7 +29,9 @@ app.get("/", (req, res) => {
 });
 
 app.post("/proc", async (req, res) => {
+  const requestId = generateUniqueId();
   const { codia, year, km } = req.body;
+  logRequestResponse(requestId, req.body);
   if (!codia || !year || !km)
     return res
       .status(404)
@@ -36,6 +40,9 @@ app.post("/proc", async (req, res) => {
   const currentYear = new Date().getFullYear();
   const brand = Math.floor(codia / 10000);
   let group;
+  let pricesResponse;
+  let rotation;
+  let percentage;
   try {
     let groupResponse = await axios.get(baseUrl + `models/${codia}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -44,9 +51,6 @@ app.post("/proc", async (req, res) => {
   } catch (error) {
     return res.send({ result: "Error al buscar el grupo", success: false });
   }
-  let pricesResponse;
-  let rotation;
-  let percentage;
   try {
     pricesResponse = await axios.get(baseUrl + `models/${codia}/prices`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -99,6 +103,14 @@ app.post("/proc", async (req, res) => {
   } catch (error) {
     return res.send({ result: JSON.stringify(error), success: false });
   }
+  logRequestResponse(requestId, {
+    result: finalPrice * percentage[0].porcentaje,
+    success: true,
+    percentage: percentage[0].porcentaje,
+    category: category,
+    price: finalPrice,
+    rotation: rotation[0].rotacion,
+  });
   return res.send({
     result: finalPrice * percentage[0].porcentaje,
     success: true,
