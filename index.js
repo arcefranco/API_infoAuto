@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
   res.sendFile(indexPath);
 });
 
-app.post("/proc", async (req, res) => {
+app.post("/price", async (req, res) => {
   const requestId = generateUniqueId();
   const { codia, year, km } = req.body;
   logRequestResponse(requestId, req.body);
@@ -105,7 +105,6 @@ app.post("/proc", async (req, res) => {
   }
   logRequestResponse(requestId, {
     result: finalPrice * percentage[0].porcentaje,
-    success: true,
     percentage: percentage[0].porcentaje,
     category: category,
     price: finalPrice,
@@ -114,9 +113,5 @@ app.post("/proc", async (req, res) => {
   return res.send({
     result: finalPrice * percentage[0].porcentaje,
     success: true,
-    percentage: percentage[0].porcentaje,
-    category: category,
-    price: finalPrice,
-    rotation: rotation[0].rotacion,
   });
 });
