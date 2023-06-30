@@ -1,3 +1,0 @@
-Time: 9:59:22 Request ID: 51623ef7-0457-4bca-8aa0-6a126f492435 Log: {"codia":"120567","year":"2020","km":"225000"}
-  Time: 9:59:27 Request ID: 51623ef7-0457-4bca-8aa0-6a126f492435 Log: {"result":522000,"percentage":0.6,"category":"E","price":870000,"rotation":"A"}
-  
