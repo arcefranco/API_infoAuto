@@ -7,7 +7,7 @@ dotenv.config();
 const regenerarToken = async () => {
   try {
     const authResponse = await axios.post(
-      "https://demo.api.infoauto.com.ar/cars/auth/login",
+      "https://api.infoauto.com.ar/cars/auth/login",
       {},
       {
         auth: {
@@ -37,7 +37,7 @@ const regenerarToken = async () => {
 
     return authResponse.data.access_token;
   } catch (error) {
-    return error;
+    throw error;
   }
 };
 
@@ -49,12 +49,11 @@ export const accessToken = async () => {
         type: QueryTypes.SELECT,
       }
     );
-
-    if (response[0].length === 0) {
+    if (response.length === 0) {
       try {
         return regenerarToken();
       } catch (error) {
-        return error;
+        throw error;
       }
     } else {
       const fechaActual = new Date();
@@ -98,6 +97,6 @@ export const accessToken = async () => {
       }
     }
   } catch (error) {
-    return error;
+    throw error;
   }
 };

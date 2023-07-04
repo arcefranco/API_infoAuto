@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(__dirname));
 const PORT = 3000;
-const baseUrl = "https://demo.api.infoauto.com.ar/cars/pub/";
+const baseUrl = "https://api.infoauto.com.ar/cars/pub/";
 
 app.listen(PORT, (error) => {
   if (!error) console.log("Escuchando en puerto: " + PORT);
@@ -31,6 +31,7 @@ app.get("/", (req, res) => {
 app.post("/price", async (req, res) => {
   const requestId = generateUniqueId();
   const { codia, year, km } = req.body;
+  let token;
   logRequestResponse(requestId, req.body);
   if (!codia || !year || !km) {
     logRequestResponse(requestId, {
@@ -41,7 +42,19 @@ app.post("/price", async (req, res) => {
       .status(404)
       .send({ result: "Faltan parámetros para realizar la consulta" });
   }
-  const token = await accessToken();
+  try {
+    token = await accessToken();
+  } catch (error) {
+    logRequestResponse(requestId, {
+      success: false,
+      result: "Error al generar o acceder al token",
+    });
+    return res.send({
+      success: false,
+      result: "Error al generar o acceder al token",
+    });
+  }
+
   const currentYear = new Date().getFullYear();
   const brand = Math.floor(codia / 10000);
   let group;
