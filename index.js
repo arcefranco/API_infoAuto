@@ -32,10 +32,15 @@ app.post("/price", async (req, res) => {
   const requestId = generateUniqueId();
   const { codia, year, km } = req.body;
   logRequestResponse(requestId, req.body);
-  if (!codia || !year || !km)
+  if (!codia || !year || !km) {
+    logRequestResponse(requestId, {
+      result: "Faltan parámetros para realizar la consulta",
+    });
+
     return res
       .status(404)
       .send({ result: "Faltan parámetros para realizar la consulta" });
+  }
   const token = await accessToken();
   const currentYear = new Date().getFullYear();
   const brand = Math.floor(codia / 10000);
@@ -49,6 +54,10 @@ app.post("/price", async (req, res) => {
     });
     group = groupResponse.data.group.id;
   } catch (error) {
+    logRequestResponse(requestId, {
+      result: "Error al buscar el grupo",
+      success: false,
+    });
     return res.send({ result: "Error al buscar el grupo", success: false });
   }
   try {
@@ -56,6 +65,10 @@ app.post("/price", async (req, res) => {
       headers: { Authorization: `Bearer ${token}` },
     });
   } catch (error) {
+    logRequestResponse(requestId, {
+      result: "Verifique el código enviado",
+      success: false,
+    });
     return res.send({ result: "Verifique el código enviado", success: false });
   }
 
@@ -63,6 +76,10 @@ app.post("/price", async (req, res) => {
     return e.year == year;
   });
   if (!prices.length) {
+    logRequestResponse(requestId, {
+      result: "No hay precio para el año indicado",
+      success: false,
+    });
     return res.send({
       result: "No hay precio para el año indicado",
       success: false,
@@ -78,9 +95,17 @@ app.post("/price", async (req, res) => {
       }
     );
   } catch (error) {
+    logRequestResponse(requestId, {
+      result: JSON.stringify(error),
+      success: false,
+    });
     return res.send({ result: JSON.stringify(error), success: false });
   }
   if (!rotation.length) {
+    logRequestResponse(requestId, {
+      result: "La marca o el grupo son incorrectos",
+      success: false,
+    });
     return res.send({
       result: "La marca o el grupo son incorrectos",
       success: false,
@@ -88,7 +113,6 @@ app.post("/price", async (req, res) => {
   }
   const antiquity = currentYear - year;
   const category = obtainCategory(rotation[0].rotacion, antiquity, km);
-  console.log(category);
   try {
     percentage = await pa7_cgConnection.query(
       `SELECT porcentaje
@@ -101,6 +125,10 @@ app.post("/price", async (req, res) => {
       }
     );
   } catch (error) {
+    logRequestResponse(requestId, {
+      result: JSON.stringify(error),
+      success: false,
+    });
     return res.send({ result: JSON.stringify(error), success: false });
   }
   logRequestResponse(requestId, {
