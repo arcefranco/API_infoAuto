@@ -70,7 +70,7 @@ export const accessToken = async () => {
 
       if (fechaActual > fechaToken && fechaActual < fechaRefresh) {
         const refreshResponse = await axios.post(
-          "https://demo.api.infoauto.com.ar/cars/auth/refresh",
+          "https://api.infoauto.com.ar/cars/auth/refresh",
           {},
           {
             headers: { Authorization: `Bearer ${response[0].refresh}` },
