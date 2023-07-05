@@ -68,10 +68,10 @@ app.post("/price", async (req, res) => {
     group = groupResponse.data.group.id;
   } catch (error) {
     logRequestResponse(requestId, {
-      result: "Error al buscar el grupo",
       success: false,
+      result: "Error al buscar el grupo",
     });
-    return res.send({ result: "Error al buscar el grupo", success: false });
+    return res.send({ success: false, result: "Error al buscar el grupo" });
   }
   try {
     pricesResponse = await axios.get(baseUrl + `models/${codia}/prices`, {
@@ -82,7 +82,7 @@ app.post("/price", async (req, res) => {
       result: "Verifique el código enviado",
       success: false,
     });
-    return res.send({ result: "Verifique el código enviado", success: false });
+    return res.send({ success: false, result: "Verifique el código enviado" });
   }
 
   const prices = pricesResponse.data.filter((e) => {
@@ -90,12 +90,12 @@ app.post("/price", async (req, res) => {
   });
   if (!prices.length) {
     logRequestResponse(requestId, {
-      result: "No hay precio para el año indicado",
       success: false,
+      result: "No hay precio para el año indicado",
     });
     return res.send({
-      result: "No hay precio para el año indicado",
       success: false,
+      result: "No hay precio para el año indicado",
     });
   }
   const finalPrice = prices[0].price * 1000;
@@ -109,19 +109,19 @@ app.post("/price", async (req, res) => {
     );
   } catch (error) {
     logRequestResponse(requestId, {
-      result: JSON.stringify(error),
       success: false,
+      result: JSON.stringify(error),
     });
     return res.send({ result: JSON.stringify(error), success: false });
   }
   if (!rotation.length) {
     logRequestResponse(requestId, {
-      result: "La marca o el grupo son incorrectos",
       success: false,
+      result: "La marca o el grupo son incorrectos",
     });
     return res.send({
-      result: "La marca o el grupo son incorrectos",
       success: false,
+      result: "La marca o el grupo son incorrectos",
     });
   }
   const antiquity = currentYear - year;
@@ -139,12 +139,13 @@ app.post("/price", async (req, res) => {
     );
   } catch (error) {
     logRequestResponse(requestId, {
-      result: JSON.stringify(error),
       success: false,
+      result: JSON.stringify(error),
     });
     return res.send({ result: JSON.stringify(error), success: false });
   }
   logRequestResponse(requestId, {
+    success: true,
     result: finalPrice * percentage[0].porcentaje,
     percentage: percentage[0].porcentaje,
     category: category,
@@ -152,7 +153,7 @@ app.post("/price", async (req, res) => {
     rotation: rotation[0].rotacion,
   });
   return res.send({
-    result: finalPrice * percentage[0].porcentaje,
     success: true,
+    result: finalPrice * percentage[0].porcentaje,
   });
 });
