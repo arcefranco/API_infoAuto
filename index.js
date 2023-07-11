@@ -216,12 +216,10 @@ app.post("/price", authToken, async (req, res) => {
     logRequestResponse(requestId, {
       success: false,
       result: "Error al buscar el grupo",
-      testing: true,
     });
     return res.send({
       success: false,
       result: "Error al buscar el grupo",
-      testing: true,
     });
   }
   try {
@@ -231,12 +229,10 @@ app.post("/price", authToken, async (req, res) => {
     if (!pricesResponse.data.length) throw "Verifique el código enviado";
   } catch (error) {
     logRequestResponse(requestId, {
-      testing: true,
       result: error,
       success: false,
     });
     return res.send({
-      testing: true,
       result: error,
       success: false,
     });
@@ -249,12 +245,10 @@ app.post("/price", authToken, async (req, res) => {
     logRequestResponse(requestId, {
       success: false,
       result: "No hay precio para el año indicado",
-      testing: true,
     });
     return res.send({
       success: false,
       result: "No hay precio para el año indicado",
-      testing: true,
     });
   }
   const finalPrice = prices[0].price * 1000;
@@ -270,24 +264,20 @@ app.post("/price", authToken, async (req, res) => {
     logRequestResponse(requestId, {
       success: false,
       result: JSON.stringify(error),
-      testing: true,
     });
     return res.send({
       success: false,
       result: JSON.stringify(error),
-      testing: true,
     });
   }
   if (!rotation.length) {
     logRequestResponse(requestId, {
       success: false,
       result: "La marca o el grupo son incorrectos",
-      testing: true,
     });
     return res.send({
       success: false,
       result: "La marca o el grupo son incorrectos",
-      testing: true,
     });
   }
   const antiquity = currentYear - year;
@@ -307,12 +297,10 @@ app.post("/price", authToken, async (req, res) => {
     logRequestResponse(requestId, {
       success: false,
       result: JSON.stringify(error),
-      testing: true,
     });
     return res.send({
       success: false,
       result: JSON.stringify(error),
-      testing: true,
     });
   }
   logRequestResponse(requestId, {
@@ -322,11 +310,9 @@ app.post("/price", authToken, async (req, res) => {
     category: category,
     price: finalPrice,
     rotation: rotation[0].rotacion,
-    testing: true,
   });
   return res.send({
     success: true,
     result: Math.round(finalPrice * percentage[0].porcentaje),
-    testing: true,
   });
 });
