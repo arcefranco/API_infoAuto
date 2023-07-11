@@ -1,7 +1,76 @@
+/**
+ * @swagger
+ * tags:
+ *   name: price
+ * components:
+ *    securitySchemes:
+ *      BasicAuth:
+ *        type: http
+ *        scheme: basic
+ *      BearerAuth:
+ *        type: http
+ *        scheme: bearer
+ *        bearerFormat: JWT
+ * /price:
+ *   post:
+ *     summary: Obtener monto
+ *     tags: [price]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               codia:
+ *                 type: number
+ *                 description: El código de Infoauto
+ *               year:
+ *                 type: number
+ *                 description: Año del auto
+ *               km:
+ *                 type: number
+ *                 description: Kilometraje del auto
+ *             required:
+ *               - codia
+ *               - year
+ *               - km
+ *     responses:
+ *       200:
+ *         description: Respuesta exitosa
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 result:
+ *                   type: string
+ *
+ * /saviToken:
+ *   get:
+ *     summary: Obtener token para realizar consultas
+ *     tags: [token]
+ *     security:
+ *       - BasicAuth: []
+ *     responses:
+ *       200:
+ *         description: Respuesta exitosa
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ */
+
 import express from "express";
 import axios from "axios";
 import { accessToken } from "./helpers/accessToken.js";
-import { pa7_cgConnection } from "./helpers/connection.js";
+import { pa7_cgConnection, pa7_comunConnection } from "./helpers/connection.js";
 import { QueryTypes } from "sequelize";
 import { obtainCategory } from "./helpers/obtainCategory.js";
 import path, { dirname } from "path";
@@ -9,6 +78,16 @@ import { fileURLToPath } from "url";
 import cors from "cors";
 import { logRequestResponse } from "./logger.js";
 import { generateUniqueId } from "./logger.js";
+import auth from "basic-auth";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import authToken from "./middlewares/authToken.js";
+import authCreateUser from "./middlewares/authCreateUser.js";
+import swaggerjsdoc from "swagger-jsdoc";
+import swaggerui from "swagger-ui-express";
+import dotenv from "dotenv";
+dotenv.config();
+
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -18,49 +97,116 @@ app.use(express.static(__dirname));
 const PORT = 3000;
 const baseUrl = "https://api.infoauto.com.ar/cars/pub/";
 
+const options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Documentación Savi api",
+    },
+    servers: [
+      {
+        url: process.env.SERVER,
+      },
+    ],
+  },
+  apis: ["index.js"],
+};
+const spaces = swaggerjsdoc(options);
+
 app.listen(PORT, (error) => {
   if (!error) console.log("Escuchando en puerto: " + PORT);
   else console.log("Ocurrió un error: ", error);
 });
 
+app.use("/info", swaggerui.serve, swaggerui.setup(spaces));
+
 app.get("/", (req, res) => {
-  const indexPath = path.resolve(__dirname, "index.html");
-  res.sendFile(indexPath);
+  return res.send("SAVI API");
 });
 
-app.post("/price", async (req, res) => {
-  const requestId = generateUniqueId();
-  const { codia, year, km } = req.body;
-  let token;
-  logRequestResponse(requestId, req.body);
-  if (!codia || !year || !km) {
-    logRequestResponse(requestId, {
-      result: "Faltan parámetros para realizar la consulta",
-    });
-
-    return res
-      .status(404)
-      .send({ result: "Faltan parámetros para realizar la consulta" });
-  }
+app.post("/createUser", authCreateUser, async (req, res) => {
+  const { nombre, contraseña } = req.body;
+  const hashedPassword = await bcrypt.hash(contraseña, 10);
   try {
-    token = await accessToken();
+    await pa7_comunConnection.query(
+      "INSERT INTO usuarios_api_savi (nombre, contraseña) VALUES (?,?)",
+      {
+        replacements: [nombre, hashedPassword],
+        type: QueryTypes.INSERT,
+      }
+    );
   } catch (error) {
-    logRequestResponse(requestId, {
-      success: false,
-      result: "Error al generar o acceder al token",
-    });
-    return res.send({
-      success: false,
-      result: "Error al generar o acceder al token",
-    });
+    return res.send(error);
   }
 
+  return res.send("creado!");
+});
+
+app.get("/saviToken", async (req, res) => {
+  const credentials = auth(req);
+  let userFinded;
+  if (!credentials) return res.send("Enviar auth header");
+  try {
+    userFinded = await pa7_comunConnection.query(
+      "SELECT * FROM usuarios_api_savi WHERE nombre = ?",
+      {
+        replacements: [credentials.name],
+        type: QueryTypes.SELECT,
+      }
+    );
+  } catch (error) {
+    return res.send(error);
+  }
+
+  if (!userFinded.length) {
+    return res.send("El usuario no existe");
+  } else {
+    bcrypt.compare(
+      credentials.pass,
+      userFinded[0].contraseña,
+      function (err, result) {
+        if (result === true) {
+          const token = jwt.sign(
+            { nombre: credentials.name },
+            process.env.SECRET,
+            { expiresIn: "10h" }
+          );
+          return res.send({ token: token });
+        } else {
+          return res.send(err);
+        }
+      }
+    );
+  }
+});
+
+app.post("/price", authToken, async (req, res) => {
+  const requestId = generateUniqueId();
+  logRequestResponse(requestId, req.body);
+  const { codia, year, km } = req.body;
   const currentYear = new Date().getFullYear();
   const brand = Math.floor(codia / 10000);
   let group;
   let pricesResponse;
   let rotation;
   let percentage;
+  let token;
+  try {
+    token = await accessToken();
+  } catch (error) {
+    logRequestResponse(requestId, error);
+    return res.send(error);
+  }
+  if (!codia || !year || !km) {
+    logRequestResponse(requestId, {
+      success: false,
+      result: "Faltan parámetros para realizar la consulta",
+    });
+    return res.send({
+      success: false,
+      result: "Faltan parámetros para realizar la consulta",
+    });
+  }
   try {
     let groupResponse = await axios.get(baseUrl + `models/${codia}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -70,19 +216,30 @@ app.post("/price", async (req, res) => {
     logRequestResponse(requestId, {
       success: false,
       result: "Error al buscar el grupo",
+      testing: true,
     });
-    return res.send({ success: false, result: "Error al buscar el grupo" });
+    return res.send({
+      success: false,
+      result: "Error al buscar el grupo",
+      testing: true,
+    });
   }
   try {
     pricesResponse = await axios.get(baseUrl + `models/${codia}/prices`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (!pricesResponse.data.length) throw "Verifique el código enviado";
   } catch (error) {
     logRequestResponse(requestId, {
-      result: "Verifique el código enviado",
+      testing: true,
+      result: error,
       success: false,
     });
-    return res.send({ success: false, result: "Verifique el código enviado" });
+    return res.send({
+      testing: true,
+      result: error,
+      success: false,
+    });
   }
 
   const prices = pricesResponse.data.filter((e) => {
@@ -92,10 +249,12 @@ app.post("/price", async (req, res) => {
     logRequestResponse(requestId, {
       success: false,
       result: "No hay precio para el año indicado",
+      testing: true,
     });
     return res.send({
       success: false,
       result: "No hay precio para el año indicado",
+      testing: true,
     });
   }
   const finalPrice = prices[0].price * 1000;
@@ -111,17 +270,24 @@ app.post("/price", async (req, res) => {
     logRequestResponse(requestId, {
       success: false,
       result: JSON.stringify(error),
+      testing: true,
     });
-    return res.send({ result: JSON.stringify(error), success: false });
+    return res.send({
+      success: false,
+      result: JSON.stringify(error),
+      testing: true,
+    });
   }
   if (!rotation.length) {
     logRequestResponse(requestId, {
       success: false,
       result: "La marca o el grupo son incorrectos",
+      testing: true,
     });
     return res.send({
       success: false,
       result: "La marca o el grupo son incorrectos",
+      testing: true,
     });
   }
   const antiquity = currentYear - year;
@@ -141,8 +307,13 @@ app.post("/price", async (req, res) => {
     logRequestResponse(requestId, {
       success: false,
       result: JSON.stringify(error),
+      testing: true,
     });
-    return res.send({ result: JSON.stringify(error), success: false });
+    return res.send({
+      success: false,
+      result: JSON.stringify(error),
+      testing: true,
+    });
   }
   logRequestResponse(requestId, {
     success: true,
@@ -151,9 +322,11 @@ app.post("/price", async (req, res) => {
     category: category,
     price: finalPrice,
     rotation: rotation[0].rotacion,
+    testing: true,
   });
   return res.send({
     success: true,
     result: Math.round(finalPrice * percentage[0].porcentaje),
+    testing: true,
   });
 });
