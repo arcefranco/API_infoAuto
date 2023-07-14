@@ -86,6 +86,8 @@ import authCreateUser from "./middlewares/authCreateUser.js";
 import swaggerjsdoc from "swagger-jsdoc";
 import swaggerui from "swagger-ui-express";
 import dotenv from "dotenv";
+import session from "express-session";
+import verifyUserCredentials from "./middlewares/verifyUserCredentials.js";
 dotenv.config();
 
 const app = express();
@@ -94,14 +96,33 @@ const __dirname = dirname(__filename);
 app.use(express.json());
 app.use(cors());
 app.use(express.static(__dirname));
+app.use(
+  session({
+    secret: process.env.TOKEN_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 30 * 60 * 1000, // 30 minutos en milisegundos
+    },
+    rolling: true,
+  })
+);
 const PORT = 3000;
-const baseUrl = "https://api.infoauto.com.ar/cars/pub/";
+const baseUrl = "https://demo.api.infoauto.com.ar/cars/pub/";
 
 const options = {
   definition: {
     openapi: "3.0.0",
     info: {
       title: "Documentación Savi api",
+      description: `
+        Mediante un usuario y contraseña que les vamos a proveer, deberán solicitar a ${process.env.SERVER}/saviToken el envío de un token.
+        Ese token les servirá para consumir el endpoint que les devolverá el precio de toma a utilizar. El token tendrá una vida útil de 10 horas.
+        Los parámetros que esperará el endpoint de consulta son:
+        - codia: código de modelo exacto de infoauto
+        - year: Año del auto
+        - km: Kilometraje del auto
+    `,
     },
     servers: [
       {
@@ -111,6 +132,17 @@ const options = {
   },
   apis: ["index.js"],
 };
+const swaggerOptions = {
+  customCss: `
+    .swagger-ui .markdown code, .swagger-ui .renderedMarkdown code {
+      color: #333;
+      font-family: system-ui;
+    }
+  `,
+  customSiteTitle: "Savi API Doc",
+  /*   favicon16: "path/to/custom-favicon-16.png",
+  favicon32: "path/to/custom-favicon-32.png", */
+};
 const spaces = swaggerjsdoc(options);
 
 app.listen(PORT, (error) => {
@@ -118,16 +150,38 @@ app.listen(PORT, (error) => {
   else console.log("Ocurrió un error: ", error);
 });
 
-app.use("/info", swaggerui.serve, swaggerui.setup(spaces));
+app.use(
+  "/info",
+  (req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+  },
+  verifyUserCredentials,
+  swaggerui.serve,
+  swaggerui.setup(spaces, swaggerOptions)
+);
 
 app.get("/", (req, res) => {
-  return res.send("SAVI API");
+  const indexPath = path.resolve(__dirname, "index.html");
+  res.sendFile(indexPath);
+});
+
+app.get("/menu", verifyUserCredentials, (req, res) => {
+  const indexPath = path.resolve(__dirname, "menu.html");
+  res.setHeader("Cache-Control", "no-store").sendFile(indexPath);
+});
+
+app.get("/createUser", authCreateUser, (req, res) => {
+  const indexPath = path.resolve(__dirname, "createUserForm.html");
+  res.setHeader("Cache-Control", "no-store").sendFile(indexPath);
 });
 
 app.post("/createUser", authCreateUser, async (req, res) => {
+  /*   console.log("post create: ", req.body); */
   const { nombre, contraseña } = req.body;
-  const hashedPassword = await bcrypt.hash(contraseña, 10);
+  let hashedPassword;
   try {
+    hashedPassword = await bcrypt.hash(contraseña, 10);
     await pa7_comunConnection.query(
       "INSERT INTO usuarios_api_savi (nombre, contraseña) VALUES (?,?)",
       {
@@ -139,7 +193,53 @@ app.post("/createUser", authCreateUser, async (req, res) => {
     return res.send(error);
   }
 
-  return res.send("creado!");
+  return res.send({ message: "Creado correctamente", success: true });
+});
+
+app.post("/login", async (req, res) => {
+  const { nombre, contraseña } = req.body;
+  let userFinded;
+  if (!nombre || !contraseña)
+    return res.send({ success: false, message: "Datos incompletos" });
+  try {
+    userFinded = await pa7_comunConnection.query(
+      "SELECT * FROM usuarios_api_savi WHERE nombre = ?",
+      {
+        replacements: [nombre],
+        type: QueryTypes.SELECT,
+      }
+    );
+  } catch (error) {
+    return res.send(error);
+  }
+
+  if (!userFinded.length) {
+    return res.send({ success: false, message: "El usuario no existe" });
+  } else {
+    bcrypt.compare(
+      contraseña,
+      userFinded[0].contraseña,
+      function (err, result) {
+        if (result === true) {
+          const token = jwt.sign(
+            {
+              userId: userFinded[0].id,
+              nombre: nombre,
+              contraseña: contraseña,
+            },
+            process.env.TOKEN_SECRET,
+            { expiresIn: "1h" }
+          );
+
+          // Almacenar el token JWT en la sesión
+          req.session.token = token;
+          return res.send({ success: true });
+        } else {
+          return res.send(err);
+        }
+      }
+    );
+  }
 });
 
 app.get("/saviToken", async (req, res) => {
