@@ -299,7 +299,8 @@ app.post("/price", authToken, async (req, res) => {
     logRequestResponse(requestId, error);
     return res.send(error);
   }
-  if (!codia || !year || !km) {
+
+  if (!codia || !year || km === undefined) {
     logRequestResponse(requestId, {
       success: false,
       nombre: req.body.nombre,
@@ -308,6 +309,17 @@ app.post("/price", authToken, async (req, res) => {
     return res.send({
       success: false,
       result: "Faltan parámetros para realizar la consulta",
+    });
+  }
+  if (isNaN(codia) || isNaN(year) || isNaN(km)) {
+    logRequestResponse(requestId, {
+      success: false,
+      nombre: req.body.nombre,
+      result: "Todos los parámetros deben ser del tipo numérico",
+    });
+    return res.send({
+      success: false,
+      result: "Todos los parámetros deben ser del tipo numérico",
     });
   }
   try {
