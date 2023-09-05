@@ -108,7 +108,7 @@ app.use(
   })
 );
 const PORT = 3000;
-const baseUrl = "https://demo.api.infoauto.com.ar/cars/pub/";
+const baseUrl = "https://api.infoauto.com.ar/cars/pub/";
 
 const options = {
   definition: {
@@ -303,7 +303,7 @@ app.post("/price", authToken, async (req, res) => {
   if (!codia || !year || km === undefined) {
     logRequestResponse(requestId, {
       success: false,
-      nombre: req.body.nombre,
+
       result: "Faltan parámetros para realizar la consulta",
     });
     return res.send({
@@ -319,7 +319,7 @@ app.post("/price", authToken, async (req, res) => {
   ) {
     logRequestResponse(requestId, {
       success: false,
-      nombre: req.body.nombre,
+
       result: "Todos los parámetros deben ser del tipo numérico",
     });
     return res.send({
@@ -335,12 +335,12 @@ app.post("/price", authToken, async (req, res) => {
   } catch (error) {
     logRequestResponse(requestId, {
       success: false,
-      nombre: req.body.nombre,
+
       result: "Error al buscar el grupo",
     });
     return res.send({
       success: false,
-      nombre: req.body.nombre,
+
       result: "Error al buscar el grupo",
     });
   }
@@ -352,7 +352,7 @@ app.post("/price", authToken, async (req, res) => {
   } catch (error) {
     logRequestResponse(requestId, {
       result: error,
-      nombre: req.body.nombre,
+
       success: false,
     });
     return res.send({
@@ -367,7 +367,7 @@ app.post("/price", authToken, async (req, res) => {
   if (!prices.length) {
     logRequestResponse(requestId, {
       success: false,
-      nombre: req.body.nombre,
+
       result: "No hay precio para el año indicado",
     });
     return res.send({
@@ -387,7 +387,7 @@ app.post("/price", authToken, async (req, res) => {
   } catch (error) {
     logRequestResponse(requestId, {
       success: false,
-      nombre: req.body.nombre,
+
       result: JSON.stringify(error),
     });
     return res.send({
@@ -398,7 +398,7 @@ app.post("/price", authToken, async (req, res) => {
   if (!rotation.length) {
     logRequestResponse(requestId, {
       success: false,
-      nombre: req.body.nombre,
+
       result: "La marca o el grupo son incorrectos",
     });
     return res.send({
@@ -422,7 +422,6 @@ app.post("/price", authToken, async (req, res) => {
   } catch (error) {
     logRequestResponse(requestId, {
       success: false,
-      nombre: req.body.nombre,
       result: JSON.stringify(error),
     });
     return res.send({
@@ -432,7 +431,6 @@ app.post("/price", authToken, async (req, res) => {
   }
   logRequestResponse(requestId, {
     success: true,
-    nombre: req.body.nombre,
     result: Math.round(finalPrice * percentage[0].porcentaje),
     percentage: percentage[0].porcentaje,
     category: category,
