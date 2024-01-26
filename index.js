@@ -198,6 +198,13 @@ app.post("/createUser", authCreateUser, async (req, res) => {
 
 app.post("/login", async (req, res) => {
   const { nombre, contraseña } = req.body;
+
+  console.log(
+    process.env.DB_USERNAME,
+    process.env.DB_PASSWORD,
+    process.env.DB_HOST
+  );
+
   let userFinded;
   if (!nombre || !contraseña)
     return res.send({ success: false, message: "Datos incompletos" });
