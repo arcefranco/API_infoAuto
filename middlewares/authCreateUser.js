@@ -16,7 +16,7 @@ export const authCreateUser = async (req, res, next) => {
     decoded = jwt.verify(token, process.env.TOKEN_SECRET);
     const nombreAuth = decoded.nombre;
     const contraseñaAuth = decoded.contraseña;
-    if (nombreAuth !== "sistemas@giama.com.ar") {
+    if (nombreAuth !== "franco") {
       return res.send(
         "Usuario o contraseña no válidos para realizar esta acción"
       );
@@ -33,17 +33,15 @@ export const authCreateUser = async (req, res, next) => {
     if (!userFinded.length) {
       return res.send("El usuario no existe");
     } else {
-      bcrypt.compare(
+      const match = await bcrypt.compare(
         contraseñaAuth,
-        userFinded[0].contraseña,
-        function (err, result) {
-          if (result === true) {
-            next();
-          } else {
-            return res.send(err);
-          }
-        }
+        userFinded[0].contraseña
       );
+      if (match) {
+        next();
+      } else {
+        return res.send("Error");
+      }
     }
   } catch (error) {
     return res.send("Token inválido");

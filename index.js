@@ -216,30 +216,29 @@ app.post("/login", async (req, res) => {
   if (!userFinded.length) {
     return res.send({ success: false, message: "El usuario no existe" });
   } else {
+    console.log(userFinded[0].contraseña);
     try {
-      bcrypt.compare(
-        contraseña,
-        userFinded[0].contraseña,
-        function (err, result) {
-          if (result === true) {
-            const token = jwt.sign(
-              {
-                userId: userFinded[0].id,
-                nombre: nombre,
-                contraseña: contraseña,
-              },
-              process.env.TOKEN_SECRET,
-              { expiresIn: "1h" }
-            );
+      const match = await bcrypt.compare(contraseña, userFinded[0].contraseña);
+      if (match) {
+        const token = jwt.sign(
+          {
+            userId: userFinded[0].id,
+            nombre: nombre,
+            contraseña: contraseña,
+          },
+          process.env.TOKEN_SECRET,
+          { expiresIn: "1h" }
+        );
 
-            // Almacenar el token JWT en la sesión
-            req.session.token = token;
-            return res.send({ success: true });
-          } else {
-            return res.send(err);
-          }
-        }
-      );
+        // Almacenar el token JWT en la sesión
+        req.session.token = token;
+        return res.send({ success: true });
+      } else {
+        return res.send({
+          success: false,
+          message: "La contraseña no es válida",
+        });
+      }
     } catch (error) {
       return res.send(error);
     }
@@ -266,22 +265,18 @@ app.get("/saviToken", async (req, res) => {
     console.log(userFinded);
     return res.send("El usuario no existe");
   } else {
-    await bcrypt.compare(
+    const match = await bcrypt.compare(
       credentials.pass,
-      userFinded[0].contraseña,
-      function (err, result) {
-        if (result === true) {
-          const token = jwt.sign(
-            { nombre: credentials.name },
-            process.env.SECRET,
-            { expiresIn: "10h" }
-          );
-          return res.send({ token: token });
-        } else {
-          return res.send(err);
-        }
-      }
+      userFinded[0].contraseña
     );
+    if (match) {
+      const token = jwt.sign({ nombre: credentials.name }, process.env.SECRET, {
+        expiresIn: "10h",
+      });
+      return res.send({ token: token });
+    } else {
+      return res.send("Error");
+    }
   }
 });
 
