@@ -259,6 +259,7 @@ app.get("/saviToken", async (req, res) => {
   }
 
   if (!userFinded.length) {
+    console.log(userFinded);
     return res.send("El usuario no existe");
   } else {
     bcrypt.compare(
