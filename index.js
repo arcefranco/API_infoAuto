@@ -216,29 +216,33 @@ app.post("/login", async (req, res) => {
   if (!userFinded.length) {
     return res.send({ success: false, message: "El usuario no existe" });
   } else {
-    bcrypt.compare(
-      contraseña,
-      userFinded[0].contraseña,
-      function (err, result) {
-        if (result === true) {
-          const token = jwt.sign(
-            {
-              userId: userFinded[0].id,
-              nombre: nombre,
-              contraseña: contraseña,
-            },
-            process.env.TOKEN_SECRET,
-            { expiresIn: "1h" }
-          );
+    try {
+      bcrypt.compare(
+        contraseña,
+        userFinded[0].contraseña,
+        function (err, result) {
+          if (result === true) {
+            const token = jwt.sign(
+              {
+                userId: userFinded[0].id,
+                nombre: nombre,
+                contraseña: contraseña,
+              },
+              process.env.TOKEN_SECRET,
+              { expiresIn: "1h" }
+            );
 
-          // Almacenar el token JWT en la sesión
-          req.session.token = token;
-          return res.send({ success: true });
-        } else {
-          return res.send(err);
+            // Almacenar el token JWT en la sesión
+            req.session.token = token;
+            return res.send({ success: true });
+          } else {
+            return res.send(err);
+          }
         }
-      }
-    );
+      );
+    } catch (error) {
+      return res.send(error);
+    }
   }
 });
 
@@ -262,7 +266,7 @@ app.get("/saviToken", async (req, res) => {
     console.log(userFinded);
     return res.send("El usuario no existe");
   } else {
-    bcrypt.compare(
+    await bcrypt.compare(
       credentials.pass,
       userFinded[0].contraseña,
       function (err, result) {
