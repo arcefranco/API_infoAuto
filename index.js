@@ -655,7 +655,7 @@ const updateML = async () => {
   await emailUpdateML("farce@giama.com.ar");
   return "OK";
 };
-let taskUpdateML = new cron.CronJob("45 15 * * *", async function () {
+let taskUpdateML = new cron.CronJob("50 15 * * *", async function () {
   try {
     if (esDiaEspecifico("jueves")) {
       await updateML();
