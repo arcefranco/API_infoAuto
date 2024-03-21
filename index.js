@@ -70,7 +70,19 @@
 import express from "express";
 import axios from "axios";
 import { accessToken } from "./helpers/accessToken.js";
-import { pa7_cgConnection, pa7_comunConnection } from "./helpers/connection.js";
+import {
+  pa7_cgConnection,
+  pa7_comunConnection,
+  pa7_alizzeConnection,
+  pa7_autConnection,
+  pa7_chConnection,
+  pa7_cvConnection,
+  pa7_detConnection,
+  pa7_elyseesConnection,
+  pa7_gfLuxcarConnection,
+  pa7_simpliplan,
+} from "./helpers/connection.js";
+import cron from "cron";
 import { QueryTypes } from "sequelize";
 import { obtainCategory } from "./helpers/obtainCategory.js";
 import path, { dirname } from "path";
@@ -88,6 +100,14 @@ import swaggerui from "swagger-ui-express";
 import dotenv from "dotenv";
 import session from "express-session";
 import verifyUserCredentials from "./middlewares/verifyUserCredentials.js";
+import fechaActual from "./helpers/fechaActual.js";
+import esUltimoDiaDelMes from "./helpers/ultimoDia.js";
+import esDiaEspecifico from "./helpers/diaEspecifico.js";
+import {
+  emailUpdateIA,
+  emailUpdateML,
+  emailError,
+} from "./helpers/sendEmail.js";
 dotenv.config();
 
 const app = express();
@@ -451,3 +471,211 @@ app.post("/price", authToken, async (req, res) => {
     result: Math.round(finalPrice * percentage[0].porcentaje),
   });
 });
+
+const updatePrice = async () => {
+  const dbs = [
+    pa7_cgConnection,
+    pa7_alizzeConnection,
+    pa7_autConnection,
+    pa7_chConnection,
+    pa7_cvConnection,
+    pa7_detConnection,
+    pa7_elyseesConnection,
+    pa7_gfLuxcarConnection,
+    pa7_simpliplan,
+  ];
+  let now = fechaActual();
+  console.log(now);
+  let resultDB = [];
+  let token;
+  try {
+    token = await accessToken();
+  } catch (error) {
+    await emailError("farce@giama.com.ar");
+    return error;
+  }
+  for (let i = 0; i <= dbs.length - 1; i++) {
+    try {
+      resultDB = await dbs[i].query(
+        "SELECT id AS idcotiza, precio_mercado, anio, modelo_info_auto FROM cotizaciones WHERE estadocotizacion NOT IN(4,6,0) AND DATEDIFF(CURRENT_DATE,FechaAltaRegistro) < 365",
+        {
+          type: QueryTypes.SELECT,
+        }
+      );
+    } catch (error) {
+      await emailError("farce@giama.com.ar");
+      console.log("error en DB: ", error);
+      return error;
+    }
+    //iteramos sobre el resultado obtenido por la DB:
+    for (let x = 0; x <= resultDB.length - 1; x++) {
+      //obtener actual precio info auto segun modelo y anio (api info auto)
+      try {
+        let resultInfoAuto = await axios.get(
+          `https://api.infoauto.com.ar/cars/pub/models/${resultDB[x].modelo_info_auto}/prices`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        resultInfoAuto = resultInfoAuto.data.filter(
+          (e) => e.year === resultDB[x].anio
+        );
+        //actualizo en cotizaciones el resultado
+        try {
+          await dbs[i].query(
+            "UPDATE cotizaciones SET fecha_ultima_actualizacion_mercado = ?, precio_mercado = ? WHERE id = ?",
+            {
+              type: QueryTypes.UPDATE,
+              replacements: [
+                now,
+                resultInfoAuto[0].price * 1000,
+                resultDB[x].idcotiza,
+              ],
+            }
+          );
+        } catch (error) {
+          await emailError("farce@giama.com.ar");
+          return error;
+        }
+        //hago el insert en historiaPrecioCotiza
+        try {
+          await dbs[i].query(
+            "INSERT historiaPrecioCotiza(idcotiza, fechaActualizacion, PrecioMercado) VALUES(?,?,?)",
+            {
+              type: QueryTypes.INSERT,
+              replacements: [
+                resultDB[x].idcotiza,
+                now,
+                resultInfoAuto[0].price * 1000,
+              ],
+            }
+          );
+        } catch (error) {
+          await emailError("farce@giama.com.ar");
+          return error;
+        }
+      } catch (error) {
+        await emailError("farce@giama.com.ar");
+        return error;
+      }
+    }
+  }
+  await emailUpdateIA("farce@giama.com.ar");
+  return "OK";
+};
+
+const updateML = async () => {
+  const dbs = [
+    pa7_cgConnection,
+    pa7_alizzeConnection,
+    pa7_autConnection,
+    pa7_chConnection,
+    pa7_cvConnection,
+    pa7_detConnection,
+    pa7_elyseesConnection,
+    pa7_gfLuxcarConnection,
+    pa7_simpliplan,
+  ];
+  let now = fechaActual();
+  let resultDB = [];
+  let resultML = [];
+  //antes de empezar obtenemos el token para hacer las llamadas a a la api ML
+  let token;
+  try {
+    await axios
+      .post(
+        "https://izpflmkchikadyvwunni.supabase.co/auth/v1/token?grant_type=password",
+        { email: process.env.EMAIL_ML, password: process.env.PASS_ML },
+        {
+          headers: {
+            apikey: process.env.API_KEY_ML,
+          },
+        }
+      )
+      .then((response) => (token = response.data["access_token"]));
+  } catch (error) {
+    await emailError("farce@giama.com.ar");
+    console.log(error);
+    return error;
+  }
+
+  for (let i = 0; i <= dbs.length - 1; i++) {
+    try {
+      resultDB = await dbs[i].query(
+        "SELECT id AS idcotiza, precio_mercado, anio, modelo_info_auto FROM cotizaciones WHERE estadocotizacion NOT IN(4,6,0) AND DATEDIFF(CURRENT_DATE,FechaAltaRegistro) < 365",
+        {
+          type: QueryTypes.SELECT,
+        }
+      );
+      console.log(resultDB);
+    } catch (error) {
+      await emailError("farce@giama.com.ar");
+      console.log(error);
+      return error.toLocaleString();
+    }
+
+    for (let x = 0; x <= resultDB.length - 1; x++) {
+      try {
+        await axios
+          .post(
+            "https://izpflmkchikadyvwunni.supabase.co/rest/v1/rpc/get_price_by_codia",
+            {
+              codia: resultDB[x]["modelo_info_auto"],
+              year: resultDB[x]["anio"],
+            },
+            {
+              headers: {
+                ["Content-Profile"]: "prices_api",
+                Authorization: `Bearer ${token}`,
+                apikey: process.env.API_KEY_ML,
+              },
+            }
+          )
+          .then((response) => {
+            console.log("DATA: ", response.data);
+            resultML = response.data;
+          });
+      } catch (error) {
+        await emailError("farce@giama.com.ar");
+        console.log("ERROR: ", error);
+        return error;
+      }
+      if (resultML) {
+        console.log("entro");
+        await dbs[i].query(
+          "UPDATE cotizaciones SET precio_mercado_libre = ?, fecha_precio_mercado_libre = ? WHERE id = ?",
+          {
+            type: QueryTypes.UPDATE,
+            replacements: [resultML["price"], now, resultDB[x]["idcotiza"]],
+          }
+        );
+      }
+    }
+  }
+  await emailUpdateML("farce@giama.com.ar");
+  return "OK";
+};
+let taskUpdateML = new cron.CronJob("45 15 * * *", async function () {
+  try {
+    if (esDiaEspecifico("jueves")) {
+      await updateML();
+    } else {
+      console.log("No se deben actualizar los valores aún");
+    }
+  } catch (error) {}
+});
+
+let task = new cron.CronJob("50 9 * * *", async function () {
+  try {
+    if (esUltimoDiaDelMes()) {
+      await updatePrice();
+    } else {
+      console.log("No se deben actualizar los valores aún");
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+taskUpdateML.start();
+task.start();
