@@ -41,6 +41,23 @@ export const emailError = async (email) => {
       subject: "HUBO UN ERROR (API INFOAUTO)",
       template: "error",
     });
+    console.log("email enviado");
+  } catch (error) {
+    console.log("error del envio del mail: ", error);
+    return JSON.stringify(error);
+  }
+};
+
+export const emailUpdateMLtoSistemas = async (email, archivosAdjuntos) => {
+  try {
+    transporter.sendMail({
+      from: "info@giama.com.ar",
+      to: email,
+      subject: "Actualización de cotizacion y fecha ML (API INFOAUTO)",
+      template: "updateML",
+      attachments: archivosAdjuntos, // Aquí se especifican los archivos adjuntos
+    });
+    console.log("Correo electrónico enviado correctamente");
   } catch (error) {
     console.log(error);
     return JSON.stringify(error);

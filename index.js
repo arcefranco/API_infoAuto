@@ -88,7 +88,11 @@ import { obtainCategory } from "./helpers/obtainCategory.js";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
-import { logRequestResponse } from "./logger.js";
+import {
+  logRequestResponse,
+  logCotizaciones,
+  convertirTextoAJSON,
+} from "./logger.js";
 import { generateUniqueId } from "./logger.js";
 import auth from "basic-auth";
 import jwt from "jsonwebtoken";
@@ -107,12 +111,20 @@ import {
   emailUpdateIA,
   emailUpdateML,
   emailError,
+  emailUpdateMLtoSistemas,
 } from "./helpers/sendEmail.js";
+import fs from "fs";
+import moment from "moment";
+
 dotenv.config();
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const date = moment().format("YYYY-MM-DD");
+const logFilePath = path.join(__dirname, `logs/${date}.txt`);
+const logMessage = "log message";
+
 app.use(express.json());
 app.use(cors());
 app.use(express.static(__dirname));
@@ -579,6 +591,7 @@ const updateML = async () => {
   let now = fechaActual();
   let resultDB = [];
   let resultML = [];
+  let jsonLog;
   //antes de empezar obtenemos el token para hacer las llamadas a a la api ML
   let token;
   try {
@@ -595,19 +608,19 @@ const updateML = async () => {
       .then((response) => (token = response.data["access_token"]));
   } catch (error) {
     await emailError("farce@giama.com.ar");
-    console.log(error);
+    console.log("error: ", error);
     return error;
   }
-
+  //recorremos las dbs
   for (let i = 0; i <= dbs.length - 1; i++) {
     try {
       resultDB = await dbs[i].query(
-        "SELECT id AS idcotiza, precio_mercado, anio, modelo_info_auto FROM cotizaciones WHERE estadocotizacion NOT IN(4,6,0) AND DATEDIFF(CURRENT_DATE,FechaAltaRegistro) < 365",
+        "SELECT id AS idcotiza, precio_mercado, anio, modelo_info_auto FROM cotizaciones WHERE estadocotizacion NOT IN(4,6,0) AND DATEDIFF(CURRENT_DATE,FechaAltaRegistro) < 15",
         {
           type: QueryTypes.SELECT,
         }
       );
-      console.log(resultDB);
+      console.log("resultDB: ", resultDB);
     } catch (error) {
       await emailError("farce@giama.com.ar");
       console.log(error);
@@ -636,33 +649,158 @@ const updateML = async () => {
             resultML = response.data;
           });
       } catch (error) {
-        await emailError("farce@giama.com.ar");
         console.log("ERROR: ", error);
+        await emailError("farce@giama.com.ar");
         return error;
       }
       if (resultML) {
         console.log("entro");
-        await dbs[i].query(
-          "UPDATE cotizaciones SET precio_mercado_libre = ?, fecha_precio_mercado_libre = ? WHERE id = ?",
-          {
-            type: QueryTypes.UPDATE,
-            replacements: [resultML["price"], now, resultDB[x]["idcotiza"]],
-          }
-        );
+        try {
+          await dbs[i].query(
+            "UPDATE cotizaciones SET precio_mercado_libre = ?, fecha_precio_mercado_libre = ? WHERE id = ?",
+            {
+              type: QueryTypes.UPDATE,
+              replacements: [resultML["price"], now, resultDB[x]["idcotiza"]],
+            }
+          );
+          jsonLog = {
+            DB: dbs[i]["config"]["database"],
+            id: resultDB[x]["idcotiza"],
+            codia: resultDB[x]["modelo_info_auto"],
+            anio: resultDB[x]["anio"],
+            precioML: resultML["price"],
+          };
+          logCotizaciones(jsonLog);
+        } catch (error) {
+          console.log(error);
+        }
+      } else {
+        console.log("no entro");
+        jsonLog = {
+          DB: dbs[i]["config"]["database"],
+          id: resultDB[x]["idcotiza"],
+          codia: resultDB[x]["modelo_info_auto"],
+          anio: resultDB[x]["anio"],
+          precioML: null,
+        };
+        logCotizaciones(jsonLog);
       }
     }
   }
-  await emailUpdateML("farce@giama.com.ar");
+
   return "OK";
 };
-let taskUpdateML = new cron.CronJob("50 15 * * *", async function () {
-  try {
-    if (esDiaEspecifico("jueves")) {
-      await updateML();
-    } else {
-      console.log("No se deben actualizar los valores aún");
+
+let taskUpdateML = new cron.CronJob("30 9 * * *", async function () {
+  if (esDiaEspecifico("miercoles")) {
+    try {
+      await updateML(); //tiro la funcion
+      const date = moment().format("YYYY-MM-DD");
+      const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
+      if (logs.length) {
+        //separo el array
+        const preciosOK = logs.filter((log) => log.precioML !== null);
+        const preciosNulos = logs.filter((log) => log.precioML === null);
+        fs.access(logFilePath, fs.constants.F_OK, async (err) => {
+          //inscribo cada array en un json
+          if (err) {
+            // El archivo no existe, así que se crea uno nuevo
+            fs.writeFile(logFilePath, logMessage, (error) => {
+              if (error) {
+                console.error("Error writing to log file:", error);
+              }
+            });
+            await emailError("farce@giama.com.ar");
+          } else {
+            // El archivo ya existe, se agrega una nueva línea
+            fs.writeFile(
+              `logsML/${date}_OK.txt`,
+              JSON.stringify(preciosOK, null, 2),
+              (error) => {
+                if (error) {
+                  console.log(error);
+                } else {
+                  console.log("escrito");
+                }
+              }
+            );
+
+            fs.writeFile(
+              `logsML/${date}_NULOS.txt`,
+              JSON.stringify(preciosNulos, null, 2),
+              (error) => {
+                if (error) {
+                  console.log(error);
+                } else {
+                  console.log("escrito");
+                }
+              }
+            );
+          }
+        });
+
+        const archivosAdjuntos = [
+          //vuelvo a juntar en un array
+          {
+            filename: `${date}_OK.txt`,
+            path: `logsML/${date}_OK.txt`,
+          },
+          {
+            filename: `${date}_NULOS.txt`,
+            path: `logsML/${date}_NULOS.txt`,
+          },
+        ];
+        try {
+          //envio el mail
+          await emailUpdateMLtoSistemas(
+            "sistemas@giama.com.ar",
+            archivosAdjuntos
+          );
+        } catch (error) {
+          await emailError("farce@giama.com.ar");
+          console.log(error);
+        }
+
+        // Eliminar los archivos después de enviar el correo electrónico
+
+        console.log("Archivos creados correctamente");
+      } else {
+        await emailError("farce@giama.com.ar");
+        console.error("No se pudo convertir el texto a JSON");
+      }
+    } catch (error) {
+      await emailError("farce@giama.com.ar");
+      console.error("Error al convertir texto a JSON:", error);
     }
-  } catch (error) {}
+  } else {
+    console.log("No se deben actualizar los valores aún");
+    return;
+  }
+  return;
+});
+
+let taskDeleteML = new cron.CronJob("30 10 * * *", async function () {
+  const date = moment().format("YYYY-MM-DD");
+  if (esDiaEspecifico("martes")) {
+    try {
+      fs.unlink(`logsML/${date}_OK.txt`, (err) => {
+        if (err) {
+          console.log(err);
+        }
+      });
+
+      fs.unlink(`logsML/${date}_NULOS.txt`, (err) => {
+        if (err) {
+          console.log(err);
+        }
+      });
+
+      return;
+    } catch (error) {
+      await emailError("farce@giama.com.ar");
+      console.log(error);
+    }
+  }
 });
 
 let task = new cron.CronJob("50 9 * * *", async function () {
@@ -673,9 +811,11 @@ let task = new cron.CronJob("50 9 * * *", async function () {
       console.log("No se deben actualizar los valores aún");
     }
   } catch (error) {
+    await emailError("farce@giama.com.ar");
     console.log(error);
   }
 });
 
 taskUpdateML.start();
+taskDeleteML.start();
 task.start();
