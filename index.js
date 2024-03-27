@@ -691,8 +691,8 @@ const updateML = async () => {
   return "OK";
 };
 
-let taskUpdateML = new cron.CronJob("20 11 * * *", async function () {
-  if (esDiaEspecifico("miercoles")) {
+let taskUpdateML = new cron.CronJob("20 9 * * *", async function () {
+  if (esDiaEspecifico("jueves")) {
     try {
       await updateML(); //tiro la funcion
       const date = moment().format("YYYY-MM-DD");
@@ -752,7 +752,10 @@ let taskUpdateML = new cron.CronJob("20 11 * * *", async function () {
         ];
         try {
           //envio el mail
-          await emailUpdateMLtoSistemas("farce@giama.com.ar", archivosAdjuntos);
+          await emailUpdateMLtoSistemas(
+            "sistemas@giama.com.ar",
+            archivosAdjuntos
+          );
         } catch (error) {
           await emailError("farce@giama.com.ar");
           console.log(error);
@@ -778,7 +781,7 @@ let taskUpdateML = new cron.CronJob("20 11 * * *", async function () {
 
 let taskDeleteML = new cron.CronJob("30 10 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
-  if (esDiaEspecifico("martes")) {
+  if (esDiaEspecifico("jueves")) {
     try {
       fs.unlink(`logsML/${date}_OK.txt`, (err) => {
         if (err) {
