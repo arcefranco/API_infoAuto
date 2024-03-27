@@ -691,13 +691,13 @@ const updateML = async () => {
   return "OK";
 };
 
-let taskUpdateML = new cron.CronJob("30 9 * * *", async function () {
+let taskUpdateML = new cron.CronJob("50 9 * * *", async function () {
   if (esDiaEspecifico("miercoles")) {
     try {
       await updateML(); //tiro la funcion
       const date = moment().format("YYYY-MM-DD");
       const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
-      if (logs.length) {
+      if (logs) {
         //separo el array
         const preciosOK = logs.filter((log) => log.precioML !== null);
         const preciosNulos = logs.filter((log) => log.precioML === null);
