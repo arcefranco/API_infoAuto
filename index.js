@@ -691,7 +691,7 @@ const updateML = async () => {
   return "OK";
 };
 
-let taskUpdateML = new cron.CronJob("5 10 * * *", async function () {
+let taskUpdateML = new cron.CronJob("30 10 * * *", async function () {
   if (esDiaEspecifico("miercoles")) {
     try {
       await updateML(); //tiro la funcion
