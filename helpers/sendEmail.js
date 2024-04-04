@@ -53,7 +53,7 @@ export const emailUpdateMLtoSistemas = async (email, archivosAdjuntos) => {
     transporter.sendMail({
       from: "info@giama.com.ar",
       to: email,
-      subject: "Actualización de cotizacion y fecha ML (API INFOAUTO)",
+      subject: "Actualización de precios de MercadoLibre",
       template: "updateML",
       attachments: archivosAdjuntos, // Aquí se especifican los archivos adjuntos
     });
