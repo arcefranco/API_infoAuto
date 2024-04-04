@@ -691,10 +691,10 @@ const updateML = async () => {
   return "OK";
 };
 
-let taskUpdateML = new cron.CronJob("58 9 * * *", async function () {
+let taskUpdateML = new cron.CronJob("2 10 * * *", async function () {
   if (esDiaEspecifico("jueves")) {
     try {
-      /*       await updateML(); */ //tiro la funcion
+      await updateML(); //tiro la funcion
       const date = moment().format("YYYY-MM-DD");
       const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
       if (logs) {
