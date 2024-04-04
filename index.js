@@ -691,7 +691,7 @@ const updateML = async () => {
   return "OK";
 };
 
-let taskUpdateML = new cron.CronJob("6 12 * * *", async function () {
+let taskUpdateML = new cron.CronJob("19 13 * * *", async function () {
   if (esDiaEspecifico("jueves")) {
     try {
       /*       await updateML(); */ //tiro la funcion
@@ -752,10 +752,7 @@ let taskUpdateML = new cron.CronJob("6 12 * * *", async function () {
         ];
         try {
           //envio el mail
-          await emailUpdateMLtoSistemas(
-            "sistemas@giama.com.ar",
-            archivosAdjuntos
-          );
+          await emailUpdateMLtoSistemas("farce@giama.com.ar", archivosAdjuntos);
         } catch (error) {
           await emailError("farce@giama.com.ar");
           console.log(error);
