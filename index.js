@@ -609,7 +609,7 @@ const updateML = async () => {
   } catch (error) {
     await emailError("farce@giama.com.ar");
     console.log("error: ", error);
-    return error;
+    throw error;
   }
   //recorremos las dbs
   for (let i = 0; i <= dbs.length - 1; i++) {
@@ -651,7 +651,7 @@ const updateML = async () => {
       } catch (error) {
         console.log("ERROR: ", error);
         await emailError("farce@giama.com.ar");
-        return error;
+        throw error;
       }
       if (resultML) {
         console.log("entro");
@@ -691,7 +691,7 @@ const updateML = async () => {
   return "OK";
 };
 
-let taskUpdateML = new cron.CronJob("21 13 * * *", async function () {
+let taskUpdateML = new cron.CronJob("47 13 * * *", async function () {
   if (esDiaEspecifico("jueves")) {
     try {
       await updateML(); //tiro la funcion
