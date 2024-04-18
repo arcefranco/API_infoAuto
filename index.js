@@ -691,80 +691,10 @@ const updateML = async () => {
   return "OK";
 };
 
-let taskUpdateML = new cron.CronJob("50 9 * * *", async function () {
+let taskUpdateML = new cron.CronJob("35 10 * * *", async function () {
   if (esDiaEspecifico("jueves")) {
     try {
       await updateML(); //tiro la funcion
-      const date = moment().format("YYYY-MM-DD");
-      const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
-      if (logs) {
-        //separo el array
-        const preciosOK = logs.filter((log) => log.precioML !== null);
-        const preciosNulos = logs.filter((log) => log.precioML === null);
-        fs.access(logFilePath, fs.constants.F_OK, async (err) => {
-          //inscribo cada array en un json
-          if (err) {
-            // El archivo no existe, así que se crea uno nuevo
-            fs.writeFile(logFilePath, logMessage, (error) => {
-              if (error) {
-                console.error("Error writing to log file:", error);
-              }
-            });
-            await emailError("farce@giama.com.ar");
-          } else {
-            // El archivo ya existe, se agrega una nueva línea
-            fs.writeFile(
-              `logsML/${date}_OK.txt`,
-              JSON.stringify(preciosOK, null, 2),
-              (error) => {
-                if (error) {
-                  console.log(error);
-                } else {
-                  console.log("escrito");
-                }
-              }
-            );
-
-            fs.writeFile(
-              `logsML/${date}_NULOS.txt`,
-              JSON.stringify(preciosNulos, null, 2),
-              (error) => {
-                if (error) {
-                  console.log(error);
-                } else {
-                  console.log("escrito");
-                }
-              }
-            );
-          }
-        });
-
-        const archivosAdjuntos = [
-          //vuelvo a juntar en un array
-          {
-            filename: `${date}_OK.txt`,
-            path: `logsML/${date}_OK.txt`,
-          },
-          {
-            filename: `${date}_NULOS.txt`,
-            path: `logsML/${date}_NULOS.txt`,
-          },
-        ];
-        try {
-          //envio el mail
-          await emailUpdateMLtoSistemas("farce@giama.com.ar", archivosAdjuntos);
-        } catch (error) {
-          await emailError("farce@giama.com.ar");
-          console.log(error);
-        }
-
-        // Eliminar los archivos después de enviar el correo electrónico
-
-        console.log("Archivos creados correctamente");
-      } else {
-        await emailError("farce@giama.com.ar");
-        console.error("No se pudo convertir el texto a JSON");
-      }
     } catch (error) {
       await emailError("farce@giama.com.ar");
       console.error("Error al convertir texto a JSON:", error);
@@ -776,7 +706,81 @@ let taskUpdateML = new cron.CronJob("50 9 * * *", async function () {
   return;
 });
 
-let taskDeleteML = new cron.CronJob("30 10 * * *", async function () {
+let taskSendEmailML = new cron.CronJob("55 10 * * *", async function () {
+  const date = moment().format("YYYY-MM-DD");
+  const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
+  if (logs) {
+    //separo el array
+    const preciosOK = logs.filter((log) => log.precioML !== null);
+    const preciosNulos = logs.filter((log) => log.precioML === null);
+    fs.access(logFilePath, fs.constants.F_OK, async (err) => {
+      //inscribo cada array en un json
+      if (err) {
+        // El archivo no existe, así que se crea uno nuevo
+        fs.writeFile(logFilePath, logMessage, (error) => {
+          if (error) {
+            console.error("Error writing to log file:", error);
+          }
+        });
+        await emailError("farce@giama.com.ar");
+      } else {
+        // El archivo ya existe, se agrega una nueva línea
+        fs.writeFile(
+          `logsML/${date}_OK.txt`,
+          JSON.stringify(preciosOK, null, 2),
+          (error) => {
+            if (error) {
+              console.log(error);
+            } else {
+              console.log("escrito");
+            }
+          }
+        );
+
+        fs.writeFile(
+          `logsML/${date}_NULOS.txt`,
+          JSON.stringify(preciosNulos, null, 2),
+          (error) => {
+            if (error) {
+              console.log(error);
+            } else {
+              console.log("escrito");
+            }
+          }
+        );
+      }
+    });
+
+    const archivosAdjuntos = [
+      //vuelvo a juntar en un array
+      {
+        filename: `${date}_OK.txt`,
+        path: `logsML/${date}_OK.txt`,
+      },
+      {
+        filename: `${date}_NULOS.txt`,
+        path: `logsML/${date}_NULOS.txt`,
+      },
+    ];
+    try {
+      //envio el mail
+      await emailUpdateMLtoSistemas("farce@giama.com.ar", archivosAdjuntos);
+      await emailUpdateMLtoSistemas("sistemas@giama.com.ar", archivosAdjuntos);
+    } catch (error) {
+      await emailError("farce@giama.com.ar");
+      console.log(error);
+    }
+
+    // Eliminar los archivos después de enviar el correo electrónico
+
+    console.log("Archivos creados correctamente");
+  } else {
+    await emailError("farce@giama.com.ar");
+    console.error("No se pudo convertir el texto a JSON");
+  }
+});
+
+let taskDeleteML = new cron.CronJob("10 11 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   if (esDiaEspecifico("jueves")) {
     try {
@@ -814,5 +818,6 @@ let task = new cron.CronJob("50 9 * * *", async function () {
 });
 
 taskUpdateML.start();
+taskSendEmailML.start();
 taskDeleteML.start();
 task.start();
