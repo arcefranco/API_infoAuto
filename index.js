@@ -707,7 +707,7 @@ let taskUpdateML = new cron.CronJob("10 11 * * *", async function () {
   return;
 });
 
-let taskSendEmailML = new cron.CronJob("55 10 * * *", async function () {
+let taskSendEmailML = new cron.CronJob("45 11 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
   if (logs) {
@@ -769,7 +769,7 @@ let taskSendEmailML = new cron.CronJob("55 10 * * *", async function () {
   }
 });
 
-let taskDeleteML = new cron.CronJob("35 11 * * *", async function () {
+let taskDeleteML = new cron.CronJob("55 11 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   if (esDiaEspecifico("jueves")) {
     try {
