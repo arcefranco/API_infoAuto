@@ -80,3 +80,16 @@ export function convertirTextoAJSON(filePath) {
     return null;
   }
 }
+
+export async function writeToFileAsync(filePath, data) {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(filePath, data, (error) => {
+      if (error) {
+        reject(error);
+      } else {
+        console.log("Archivo escrito:", filePath);
+        resolve();
+      }
+    });
+  });
+}

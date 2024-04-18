@@ -92,6 +92,7 @@ import {
   logRequestResponse,
   logCotizaciones,
   convertirTextoAJSON,
+  writeToFileAsync,
 } from "./logger.js";
 import { generateUniqueId } from "./logger.js";
 import auth from "basic-auth";
@@ -691,7 +692,7 @@ const updateML = async () => {
   return "OK";
 };
 
-let taskUpdateML = new cron.CronJob("35 10 * * *", async function () {
+let taskUpdateML = new cron.CronJob("10 11 * * *", async function () {
   if (esDiaEspecifico("jueves")) {
     try {
       await updateML(); //tiro la funcion
@@ -724,30 +725,18 @@ let taskSendEmailML = new cron.CronJob("55 10 * * *", async function () {
         });
         await emailError("farce@giama.com.ar");
       } else {
-        // El archivo ya existe, se agrega una nueva línea
-        fs.writeFile(
-          `logsML/${date}_OK.txt`,
-          JSON.stringify(preciosOK, null, 2),
-          (error) => {
-            if (error) {
-              console.log(error);
-            } else {
-              console.log("escrito");
-            }
-          }
-        );
-
-        fs.writeFile(
-          `logsML/${date}_NULOS.txt`,
-          JSON.stringify(preciosNulos, null, 2),
-          (error) => {
-            if (error) {
-              console.log(error);
-            } else {
-              console.log("escrito");
-            }
-          }
-        );
+        try {
+          await writeToFileAsync(
+            `logsML/${date}_OK.txt`,
+            JSON.stringify(preciosOK, null, 2)
+          );
+          await writeToFileAsync(
+            `logsML/${date}_NULOS.txt`,
+            JSON.stringify(preciosNulos, null, 2)
+          );
+        } catch (error) {
+          await emailError("farce@giama.com.ar");
+        }
       }
     });
 
@@ -768,7 +757,7 @@ let taskSendEmailML = new cron.CronJob("55 10 * * *", async function () {
       await emailUpdateMLtoSistemas("sistemas@giama.com.ar", archivosAdjuntos);
     } catch (error) {
       await emailError("farce@giama.com.ar");
-      console.log(error);
+      console.log("ERROR AL ENVIO DE MAILS OK: ", error);
     }
 
     // Eliminar los archivos después de enviar el correo electrónico
@@ -780,7 +769,7 @@ let taskSendEmailML = new cron.CronJob("55 10 * * *", async function () {
   }
 });
 
-let taskDeleteML = new cron.CronJob("10 11 * * *", async function () {
+let taskDeleteML = new cron.CronJob("35 11 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   if (esDiaEspecifico("jueves")) {
     try {
