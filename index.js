@@ -774,7 +774,7 @@ let taskSendEmailML = new cron.CronJob("45 13 * * *", async function () {
   }
 });
 
-let taskDeleteML = new cron.CronJob("55 11 * * *", async function () {
+let taskDeleteML = new cron.CronJob("45 14 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   if (esDiaEspecifico("jueves")) {
     try {
