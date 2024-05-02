@@ -123,7 +123,7 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const date = moment().format("YYYY-MM-DD");
-const logFilePath = path.join(__dirname, `logs/${date}.txt`);
+const logFilePath = path.join(__dirname, `logsML/${date}.txt`);
 const logMessage = "log message";
 
 app.use(express.json());
@@ -707,11 +707,12 @@ let taskUpdateML = new cron.CronJob("10 11 * * *", async function () {
   return;
 });
 
-let taskSendEmailML = new cron.CronJob("45 13 * * *", async function () {
+let taskSendEmailML = new cron.CronJob("50 14 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
   if (esDiaEspecifico("jueves")) {
     if (logs) {
+      console.log("HAY LOGS");
       //separo el array
       const preciosOK = logs.filter((log) => log.precioML !== null);
       const preciosNulos = logs.filter((log) => log.precioML === null);
@@ -736,6 +737,7 @@ let taskSendEmailML = new cron.CronJob("45 13 * * *", async function () {
               JSON.stringify(preciosNulos, null, 2)
             );
           } catch (error) {
+            console.log("ERROR EN LA CREACION DE ARCHIVOS");
             await emailError("farce@giama.com.ar");
           }
         }
@@ -774,7 +776,7 @@ let taskSendEmailML = new cron.CronJob("45 13 * * *", async function () {
   }
 });
 
-let taskDeleteML = new cron.CronJob("45 14 * * *", async function () {
+let taskDeleteML = new cron.CronJob("15 15 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   if (esDiaEspecifico("jueves")) {
     try {
