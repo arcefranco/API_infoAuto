@@ -612,6 +612,7 @@ const updateML = async () => {
     console.log("error: ", error);
     throw error;
   }
+  console.log("TOKEN: ", token);
   //recorremos las dbs
   for (let i = 0; i <= dbs.length - 1; i++) {
     try {
@@ -694,7 +695,7 @@ const updateML = async () => {
 
 app.post("/updateML", updateML);
 
-let taskUpdateML = new cron.CronJob("50 9 * * *", async function () {
+let taskUpdateML = new cron.CronJob("11 10 * * *", async function () {
   if (esDiaEspecifico("martes")) {
     try {
       await updateML(); //tiro la funcion
@@ -709,7 +710,7 @@ let taskUpdateML = new cron.CronJob("50 9 * * *", async function () {
   return;
 });
 
-let taskSendEmailML = new cron.CronJob("30 10 * * *", async function () {
+let taskSendEmailML = new cron.CronJob("35 10 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
   if (esDiaEspecifico("martes")) {
@@ -778,7 +779,7 @@ let taskSendEmailML = new cron.CronJob("30 10 * * *", async function () {
   }
 });
 
-let taskDeleteML = new cron.CronJob("30 11 * * *", async function () {
+let taskDeleteML = new cron.CronJob("30 13 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   if (esDiaEspecifico("martes")) {
     try {
