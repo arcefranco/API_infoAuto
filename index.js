@@ -695,8 +695,8 @@ const updateML = async () => {
 
 app.post("/updateML", updateML);
 
-let taskUpdateML = new cron.CronJob("11 10 * * *", async function () {
-  if (esDiaEspecifico("martes")) {
+let taskUpdateML = new cron.CronJob("25 14 * * *", async function () {
+  if (esDiaEspecifico("jueves")) {
     try {
       await updateML(); //tiro la funcion
     } catch (error) {
@@ -710,10 +710,10 @@ let taskUpdateML = new cron.CronJob("11 10 * * *", async function () {
   return;
 });
 
-let taskSendEmailML = new cron.CronJob("35 10 * * *", async function () {
+let taskSendEmailML = new cron.CronJob("40 14 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
-  if (esDiaEspecifico("martes")) {
+  if (esDiaEspecifico("jueves")) {
     if (logs) {
       console.log("HAY LOGS");
       //separo el array
@@ -779,7 +779,7 @@ let taskSendEmailML = new cron.CronJob("35 10 * * *", async function () {
   }
 });
 
-let taskDeleteML = new cron.CronJob("30 13 * * *", async function () {
+let taskDeleteML = new cron.CronJob("15 15 * * *", async function () {
   const date = moment().format("YYYY-MM-DD");
   if (esDiaEspecifico("martes")) {
     try {
