@@ -510,7 +510,7 @@ const updatePrice = async () => {
   for (let i = 0; i <= dbs.length - 1; i++) {
     try {
       resultDB = await dbs[i].query(
-        "SELECT id AS idcotiza, precio_mercado, anio, modelo_info_auto FROM cotizaciones WHERE estadocotizacion NOT IN(4,6,0) AND DATEDIFF(CURRENT_DATE,FechaAltaRegistro) < 365",
+        "SELECT id AS idcotiza, precio_mercado, anio, modelo_info_auto FROM cotizaciones WHERE estadocotizacion NOT IN(4,6,0) AND DATEDIFF(CURRENT_DATE,FechaAltaRegistro) < 730",
         {
           type: QueryTypes.SELECT,
         }
