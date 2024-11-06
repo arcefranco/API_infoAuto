@@ -34,7 +34,6 @@ const regenerarToken = async () => {
         type: QueryTypes.INSERT,
       }
     );
-
     return authResponse.data.access_token;
   } catch (error) {
     throw error;

@@ -510,7 +510,10 @@ const updatePrice = async () => {
   for (let i = 0; i <= dbs.length - 1; i++) {
     try {
       resultDB = await dbs[i].query(
-        "SELECT id AS idcotiza, precio_mercado, anio, modelo_info_auto FROM cotizaciones WHERE estadocotizacion NOT IN(4,6,0) AND DATEDIFF(CURRENT_DATE,FechaAltaRegistro) < 730",
+        `SELECT DISTINCT modelo_info_auto, id AS idcotiza, precio_mercado, anio 
+        FROM cotizaciones 
+        WHERE estadocotizacion NOT IN (4, 6, 0) 
+        AND DATEDIFF(CURRENT_DATE, FechaAltaRegistro) < 730`,
         {
           type: QueryTypes.SELECT,
         }
@@ -577,6 +580,108 @@ const updatePrice = async () => {
   return "OK";
 };
 
+const updatePrice_batch = async () => {
+  const dbs = [
+    pa7_cgConnection,
+    pa7_alizzeConnection,
+    pa7_autConnection,
+    pa7_chConnection,
+    pa7_cvConnection,
+    pa7_detConnection,
+    pa7_elyseesConnection,
+    pa7_gfLuxcarConnection,
+    pa7_simpliplan,
+  ];
+
+  let now = fechaActual();
+  let token;
+  let resultAPI = [];
+  try {
+    token = await accessToken();
+  } catch (error) {
+    await emailError("farce@giama.com.ar");
+    return error;
+  }
+
+  for (let i = 0; i < dbs.length; i++) {
+    let resultDB;
+    let t = await dbs[i].transaction();
+    try {
+      resultDB = await dbs[i].query(
+        `SELECT modelo_info_auto, id AS idcotiza, precio_mercado, anio 
+        FROM cotizaciones 
+        WHERE estadocotizacion NOT IN (4, 6, 0) 
+        AND DATEDIFF(CURRENT_DATE, FechaAltaRegistro) < 730`,
+        { type: QueryTypes.SELECT, transaction: t }
+      );
+    } catch (error) {
+      await emailError("farce@giama.com.ar");
+      console.log("Error en DB:", error);
+      return error;
+    }
+    for (let j = 0; j < resultDB.length; j += 100) {
+      //lo recorremos de a 100 solo para llenar el resultAPI con las llamadas
+      let batch = resultDB.slice(j, j + 100);
+      let modeloInfoAutoBatch = batch.map((item) => item.modelo_info_auto);
+      modeloInfoAutoBatch = [...new Set(modeloInfoAutoBatch)];
+      let response = await axios.post(
+        `https://api.infoauto.com.ar/cars/pub/batch`,
+        { batch: modeloInfoAutoBatch },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      resultAPI = resultAPI.concat(
+        response.data.map(({ codia, prices }) => ({ codia, prices }))
+      );
+    }
+    let resultCODIA;
+    let h = 0;
+    for (h; h < resultDB.length; h++) {
+      //lo recorremos de a 1 para actualizar c/precio con c/año
+      resultCODIA = resultAPI.find(
+        (e) => e.codia === resultDB[h]["modelo_info_auto"]
+      );
+      try {
+        await dbs[i].query(
+          "UPDATE cotizaciones SET fecha_ultima_actualizacion_mercado = ?, precio_mercado = ? WHERE id = ?",
+          {
+            type: QueryTypes.UPDATE,
+            replacements: [
+              now,
+              resultCODIA["prices"].find((e) => e.year === resultDB[h]["anio"])
+                .price * 1000,
+              resultDB[h].idcotiza,
+            ],
+          }
+        );
+      } catch (error) {
+        await emailError("farce@giama.com.ar");
+        return error;
+      }
+      //hago el insert en historiaPrecioCotiza
+      try {
+        await dbs[i].query(
+          "INSERT historiaPrecioCotiza(idcotiza, fechaActualizacion, PrecioMercado) VALUES(?,?,?)",
+          {
+            type: QueryTypes.INSERT,
+            replacements: [
+              resultDB[h].idcotiza,
+              now,
+              resultCODIA["prices"].find((e) => e.year === resultDB[h]["anio"])
+                .price * 1000,
+            ],
+          }
+        );
+      } catch (error) {
+        await emailError("farce@giama.com.ar");
+        return error;
+      }
+    }
+    console.log(h);
+  }
+
+  await emailUpdateIA("farce@giama.com.ar");
+  return "OK";
+};
 const updateML = async () => {
   const dbs = [
     pa7_cgConnection,
@@ -803,10 +908,10 @@ let taskDeleteML = new cron.CronJob("15 15 * * *", async function () {
   }
 });
 
-let task = new cron.CronJob("50 9 * * *", async function () {
+let task = new cron.CronJob("12 13 * * *", async function () {
   if (esUltimoDiaDelMes()) {
     try {
-      await updatePrice();
+      await updatePrice_batch();
     } catch (error) {
       await emailError("farce@giama.com.ar");
       console.log(error);
