@@ -604,6 +604,7 @@ const updatePrice_batch = async () => {
   }
 
   for (let i = 0; i < dbs.length; i++) {
+    console.log(i);
     let resultDB;
     let t = await dbs[i].transaction();
     try {
@@ -617,7 +618,7 @@ const updatePrice_batch = async () => {
     } catch (error) {
       await emailError("farce@giama.com.ar");
       console.log("Error en DB:", error);
-      return error;
+      continue;
     }
     for (let j = 0; j < resultDB.length; j += 100) {
       //lo recorremos de a 100 solo para llenar el resultAPI con las llamadas
@@ -655,7 +656,8 @@ const updatePrice_batch = async () => {
         );
       } catch (error) {
         await emailError("farce@giama.com.ar");
-        return error;
+        console.log(error);
+        continue;
       }
       //hago el insert en historiaPrecioCotiza
       try {
@@ -673,12 +675,12 @@ const updatePrice_batch = async () => {
         );
       } catch (error) {
         await emailError("farce@giama.com.ar");
-        return error;
+        console.log(error);
+        continue;
       }
     }
     console.log(h);
   }
-
   await emailUpdateIA("farce@giama.com.ar");
   return "OK";
 };
@@ -816,9 +818,9 @@ let taskUpdateML = new cron.CronJob("25 14 * * *", async function () {
 });
 
 let taskSendEmailML = new cron.CronJob("40 14 * * *", async function () {
-  const date = moment().format("YYYY-MM-DD");
-  const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
   if (esDiaEspecifico("martes")) {
+    const date = moment().format("YYYY-MM-DD");
+    const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
     if (logs) {
       console.log("HAY LOGS");
       //separo el array
@@ -908,15 +910,15 @@ let taskDeleteML = new cron.CronJob("15 15 * * *", async function () {
   }
 });
 
-let task = new cron.CronJob("12 13 * * *", async function () {
-  if (esUltimoDiaDelMes()) {
-    try {
-      await updatePrice_batch();
-    } catch (error) {
-      await emailError("farce@giama.com.ar");
-      console.log(error);
-    }
+let task = new cron.CronJob("55 14 * * *", async function () {
+  /*   if (esUltimoDiaDelMes()) { */
+  try {
+    await updatePrice_batch();
+  } catch (error) {
+    await emailError("farce@giama.com.ar");
+    console.log(error);
   }
+  /*   } */
 });
 
 taskUpdateML.start();
