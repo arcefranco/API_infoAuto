@@ -802,22 +802,28 @@ const updateML = async () => {
 
 app.post("/updateML", updateML);
 
-let taskUpdateML = new cron.CronJob("25 14 * * *", async function () {
-  if (esDiaEspecifico("martes")) {
-    try {
-      await updateML(); //tiro la funcion
-    } catch (error) {
-      await emailError("farce@giama.com.ar");
-      console.error("Error al convertir texto a JSON:", error);
+new cron.CronJob( //UPDATE ML
+  "25 14 * * *",
+  async function () {
+    if (esDiaEspecifico("martes")) {
+      try {
+        await updateML(); //tiro la funcion
+      } catch (error) {
+        await emailError("farce@giama.com.ar");
+        console.error("Error al convertir texto a JSON:", error);
+      }
+    } else {
+      console.log("No se deben actualizar los valores aún");
+      return;
     }
-  } else {
-    console.log("No se deben actualizar los valores aún");
     return;
-  }
-  return;
-});
+  },
+  null,
+  true
+);
 
-let taskSendEmailML = new cron.CronJob("40 14 * * *", async function () {
+new cron.CronJob("40 14 * * *", async function () {
+  //ENVIA TXT ML
   if (esDiaEspecifico("martes")) {
     const date = moment().format("YYYY-MM-DD");
     const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
@@ -884,44 +890,53 @@ let taskSendEmailML = new cron.CronJob("40 14 * * *", async function () {
       console.error("No se pudo convertir el texto a JSON");
     }
   }
-});
+}),
+  null,
+  true;
 
-let taskDeleteML = new cron.CronJob("15 15 * * *", async function () {
-  const date = moment().format("YYYY-MM-DD");
-  if (esDiaEspecifico("martes")) {
-    try {
-      fs.unlink(`logsML/${date}_OK.txt`, (err) => {
-        if (err) {
-          console.log(err);
-        }
-      });
+new cron.CronJob(
+  "15 15 * * *",
+  async function () {
+    //ELIMINA TXT
+    const date = moment().format("YYYY-MM-DD");
+    if (esDiaEspecifico("martes")) {
+      try {
+        fs.unlink(`logsML/${date}_OK.txt`, (err) => {
+          if (err) {
+            console.log(err);
+          }
+        });
 
-      fs.unlink(`logsML/${date}_NULOS.txt`, (err) => {
-        if (err) {
-          console.log(err);
-        }
-      });
+        fs.unlink(`logsML/${date}_NULOS.txt`, (err) => {
+          if (err) {
+            console.log(err);
+          }
+        });
 
-      return;
-    } catch (error) {
-      await emailError("farce@giama.com.ar");
-      console.log(error);
+        return;
+      } catch (error) {
+        await emailError("farce@giama.com.ar");
+        console.log(error);
+      }
     }
-  }
-});
+  },
+  null,
+  true
+);
 
-let task = new cron.CronJob("55 14 * * *", async function () {
-  /*   if (esUltimoDiaDelMes()) { */
-  try {
-    await updatePrice_batch();
-  } catch (error) {
-    await emailError("farce@giama.com.ar");
-    console.log(error);
-  }
-  /*   } */
-});
-
-taskUpdateML.start();
-taskSendEmailML.start();
-taskDeleteML.start();
-task.start();
+new cron.CronJob(
+  "55 14 * * *",
+  async function () {
+    //ACTUALIZA COTIZACIONES INFOAUTO
+    if (esUltimoDiaDelMes()) {
+      try {
+        await updatePrice_batch();
+      } catch (error) {
+        await emailError("farce@giama.com.ar");
+        console.log(error);
+      }
+    }
+  },
+  null,
+  true
+);

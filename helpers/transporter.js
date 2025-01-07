@@ -18,7 +18,9 @@ export const transporter = createTransport({
     secure: false,
     ignoreTLS: true,
     rejectUnauthorized: false,
+    minVersion: "TLSv1.2",
   },
+  debug: true,
 });
 
 const handlebarOptions = {

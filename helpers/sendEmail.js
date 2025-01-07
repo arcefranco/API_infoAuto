@@ -4,13 +4,13 @@ dotenv.config();
 
 export const emailUpdateIA = async (email) => {
   try {
-    transporter.sendMail({
-      //Envio el mail a la casilla que encontramos segun su nombre de usuario
+    const info = await transporter.sendMail({
       from: "info@giama.com.ar",
       to: email,
       subject: "Actualización de Info Auto (cotizaciones)",
       template: "updatePrice",
     });
+    console.log("Correo enviado:", info);
   } catch (error) {
     console.log(error);
     return JSON.stringify(error);
