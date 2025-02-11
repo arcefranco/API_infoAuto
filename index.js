@@ -803,11 +803,11 @@ const updateML = async () => {
 app.post("/updateML", updateML);
 
 new cron.CronJob( //UPDATE ML
-  "25 9 * * *",
+  "15 11 * * *",
   async function () {
     if (esDiaEspecifico("martes")) {
       try {
-        await updateML(); //tiro la funcion
+        await updateML();
       } catch (error) {
         await emailError("farce@giama.com.ar");
         console.error("Error al convertir texto a JSON:", error);
@@ -822,43 +822,62 @@ new cron.CronJob( //UPDATE ML
   true
 );
 
-new cron.CronJob("10 10 * * *", async function () {
-  //ENVIA TXT ML
-  if (esDiaEspecifico("martes")) {
-    const date = moment().format("YYYY-MM-DD");
-    const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
-    if (logs) {
-      console.log("HAY LOGS");
-      //separo el array
-      const preciosOK = logs.filter((log) => log.precioML !== null);
-      const preciosNulos = logs.filter((log) => log.precioML === null);
-      fs.access(logFilePath, fs.constants.F_OK, async (err) => {
-        //inscribo cada array en un json
-        if (err) {
-          // El archivo no existe, así que se crea uno nuevo
-          fs.writeFile(logFilePath, logMessage, (error) => {
-            if (error) {
-              console.error("Error writing to log file:", error);
-            }
-          });
-          await emailError("farce@giama.com.ar");
-        } else {
-          try {
-            await writeToFileAsync(
-              `logsML/${date}_OK.txt`,
-              JSON.stringify(preciosOK, null, 2)
-            );
-            await writeToFileAsync(
-              `logsML/${date}_NULOS.txt`,
-              JSON.stringify(preciosNulos, null, 2)
-            );
-          } catch (error) {
-            console.log("ERROR EN LA CREACION DE ARCHIVOS");
+new cron.CronJob(
+  "40 11 * * *",
+  async function () {
+    //CREACION DE TXT
+    if (esDiaEspecifico("martes")) {
+      const date = moment().format("YYYY-MM-DD");
+      const logs = convertirTextoAJSON(`logsML/${date}.txt`); //guardo el array q se crea en la variable logs
+      if (logs) {
+        console.log("HAY LOGS");
+        //separo el array
+        const preciosOK = logs.filter((log) => log.precioML !== null);
+        const preciosNulos = logs.filter((log) => log.precioML === null);
+        fs.access(logFilePath, fs.constants.F_OK, async (err) => {
+          //inscribo cada array en un json
+          if (err) {
+            // El archivo no existe, así que se crea uno nuevo
+            fs.writeFile(logFilePath, logMessage, (error) => {
+              if (error) {
+                console.error("Error writing to log file:", error);
+              }
+            });
             await emailError("farce@giama.com.ar");
+          } else {
+            try {
+              await writeToFileAsync(
+                `logsML/${date}_OK.txt`,
+                JSON.stringify(preciosOK, null, 2)
+              );
+              await writeToFileAsync(
+                `logsML/${date}_NULOS.txt`,
+                JSON.stringify(preciosNulos, null, 2)
+              );
+            } catch (error) {
+              console.log("ERROR EN LA CREACION DE ARCHIVOS");
+              await emailError("farce@giama.com.ar");
+            }
           }
-        }
-      });
+        });
 
+        console.log("Archivos creados correctamente");
+      } else {
+        await emailError("farce@giama.com.ar");
+        console.error("No se pudo convertir el texto a JSON");
+      }
+    }
+  },
+  null,
+  true
+);
+
+new cron.CronJob(
+  "50 11 * * *",
+  async function () {
+    //ENVIA TXT AL MAIL
+    const date = moment().format("YYYY-MM-DD");
+    if (esDiaEspecifico("martes")) {
       const archivosAdjuntos = [
         //vuelvo a juntar en un array
         {
@@ -881,21 +900,13 @@ new cron.CronJob("10 10 * * *", async function () {
         await emailError("farce@giama.com.ar");
         console.log("ERROR AL ENVIO DE MAILS OK: ", error);
       }
-
-      // Eliminar los archivos después de enviar el correo electrónico
-
-      console.log("Archivos creados correctamente");
-    } else {
-      await emailError("farce@giama.com.ar");
-      console.error("No se pudo convertir el texto a JSON");
     }
-  }
-}),
+  },
   null,
-  true;
-
+  true
+);
 new cron.CronJob(
-  "20 10 * * *",
+  "15 12 * * *",
   async function () {
     //ELIMINA TXT
     const date = moment().format("YYYY-MM-DD");
