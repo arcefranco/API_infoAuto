@@ -803,7 +803,7 @@ const updateML = async () => {
 app.post("/updateML", updateML);
 
 new cron.CronJob( //UPDATE ML
-  "25 14 * * *",
+  "25 9 * * *",
   async function () {
     if (esDiaEspecifico("martes")) {
       try {
@@ -822,7 +822,7 @@ new cron.CronJob( //UPDATE ML
   true
 );
 
-new cron.CronJob("10 15 * * *", async function () {
+new cron.CronJob("10 10 * * *", async function () {
   //ENVIA TXT ML
   if (esDiaEspecifico("martes")) {
     const date = moment().format("YYYY-MM-DD");
@@ -895,7 +895,7 @@ new cron.CronJob("10 15 * * *", async function () {
   true;
 
 new cron.CronJob(
-  "20 15 * * *",
+  "20 10 * * *",
   async function () {
     //ELIMINA TXT
     const date = moment().format("YYYY-MM-DD");
