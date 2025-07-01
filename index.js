@@ -936,17 +936,17 @@ new cron.CronJob(
 );
 
 new cron.CronJob(
-  "55 14 * * *",
+  "10 10 * * *",
   async function () {
     //ACTUALIZA COTIZACIONES INFOAUTO
-    if (esUltimoDiaDelMes()) {
-      try {
-        await updatePrice_batch();
-      } catch (error) {
-        await emailError("farce@giama.com.ar");
-        console.log(error);
-      }
+    /*     if (esUltimoDiaDelMes()) { */
+    try {
+      await updatePrice_batch();
+    } catch (error) {
+      await emailError("farce@giama.com.ar");
+      console.log(error);
     }
+    /*     } */
   },
   null,
   true
