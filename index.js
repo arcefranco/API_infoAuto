@@ -628,7 +628,12 @@ const updatePrice_batch = async () => {
       let response = await axios.post(
         `https://api.infoauto.com.ar/cars/pub/batch`,
         { batch: modeloInfoAutoBatch },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Accept-Encoding": "gzip",
+          },
+        }
       );
       resultAPI = resultAPI.concat(
         response.data.map(({ codia, prices }) => ({ codia, prices }))
@@ -936,7 +941,7 @@ new cron.CronJob(
 );
 
 new cron.CronJob(
-  "15 12 * * *",
+  "25 14 * * *",
   async function () {
     //ACTUALIZA COTIZACIONES INFOAUTO
     /*     if (esUltimoDiaDelMes()) { */
