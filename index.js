@@ -583,14 +583,14 @@ const updatePrice = async () => {
 const updatePrice_batch = async () => {
   const dbs = [
     pa7_cgConnection,
-    pa7_alizzeConnection,
+    /*     pa7_alizzeConnection,
     pa7_autConnection,
     pa7_chConnection,
     pa7_cvConnection,
     pa7_detConnection,
     pa7_elyseesConnection,
     pa7_gfLuxcarConnection,
-    pa7_simpliplan,
+    pa7_simpliplan, */
   ];
 
   let now = fechaActual();
@@ -936,7 +936,7 @@ new cron.CronJob(
 );
 
 new cron.CronJob(
-  "50 10 * * *",
+  "35 11 * * *",
   async function () {
     //ACTUALIZA COTIZACIONES INFOAUTO
     /*     if (esUltimoDiaDelMes()) { */
