@@ -140,7 +140,7 @@ app.use(
     rolling: true,
   })
 );
-const PORT = 3000;
+
 const baseUrl = "https://api.infoauto.com.ar/cars/pub/";
 
 const options = {
@@ -178,8 +178,8 @@ const swaggerOptions = {
 };
 const spaces = swaggerjsdoc(options);
 
-app.listen(PORT, (error) => {
-  if (!error) console.log("Escuchando en puerto: " + PORT);
+app.listen(process.env.PORT, (error) => {
+  if (!error) console.log("Escuchando en puerto: " + process.env.PORT);
   else console.log("Ocurrió un error: ", error);
 });
 
@@ -936,7 +936,7 @@ new cron.CronJob(
 );
 
 new cron.CronJob(
-  "10 12 * * *",
+  "15 12 * * *",
   async function () {
     //ACTUALIZA COTIZACIONES INFOAUTO
     /*     if (esUltimoDiaDelMes()) { */
