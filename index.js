@@ -583,14 +583,14 @@ const updatePrice = async () => {
 const updatePrice_batch = async () => {
   const dbs = [
     pa7_cgConnection,
-    /*     pa7_alizzeConnection,
+    pa7_alizzeConnection,
     pa7_autConnection,
     pa7_chConnection,
     pa7_cvConnection,
     pa7_detConnection,
     pa7_elyseesConnection,
     pa7_gfLuxcarConnection,
-    pa7_simpliplan, */
+    pa7_simpliplan,
   ];
   const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
   let now = fechaActual();
@@ -638,7 +638,7 @@ const updatePrice_batch = async () => {
       resultAPI = resultAPI.concat(
         response.data.map(({ codia, prices }) => ({ codia, prices }))
       );
-      await sleep(60000);
+      await sleep(5000);
     }
     let resultCODIA;
     let h = 0;
@@ -945,14 +945,14 @@ new cron.CronJob(
   "31 17 * * *",
   async function () {
     //ACTUALIZA COTIZACIONES INFOAUTO
-    /*     if (esUltimoDiaDelMes()) { */
-    try {
-      await updatePrice_batch();
-    } catch (error) {
-      await emailError("farce@giama.com.ar");
-      console.log(error);
+    if (esUltimoDiaDelMes()) {
+      try {
+        await updatePrice_batch();
+      } catch (error) {
+        await emailError("farce@giama.com.ar");
+        console.log(error);
+      }
     }
-    /*     } */
   },
   null,
   true
