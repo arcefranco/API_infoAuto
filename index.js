@@ -592,7 +592,7 @@ const updatePrice_batch = async () => {
     pa7_gfLuxcarConnection,
     pa7_simpliplan, */
   ];
-
+  const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
   let now = fechaActual();
   let token;
   let resultAPI = [];
@@ -638,6 +638,7 @@ const updatePrice_batch = async () => {
       resultAPI = resultAPI.concat(
         response.data.map(({ codia, prices }) => ({ codia, prices }))
       );
+      await sleep(60000);
     }
     let resultCODIA;
     let h = 0;
