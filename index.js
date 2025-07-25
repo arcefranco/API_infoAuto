@@ -936,7 +936,7 @@ new cron.CronJob(
 );
 
 new cron.CronJob(
-  "10 10 * * *",
+  "50 10 * * *",
   async function () {
     //ACTUALIZA COTIZACIONES INFOAUTO
     /*     if (esUltimoDiaDelMes()) { */
